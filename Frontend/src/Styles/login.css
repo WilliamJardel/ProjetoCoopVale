@@ -1,0 +1,343 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --green: #5f8d38;
+  --green-dark: #557d31;
+  --green-soft: #f4f0c9;
+  --text: #4f4f22;
+  --muted: #aaa996;
+  --border: #d4d0a7;
+  --background: #f8f8f5;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+  background: var(--background);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.login-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 52% 48%;
+}
+
+.brand-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100vh;
+  padding: clamp(42px, 6vw, 88px);
+  color: white;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 16%, rgba(255, 242, 180, .30), transparent 34%),
+    linear-gradient(145deg, #e1e659 0%, #668f3d 52%, #739846 100%);
+}
+
+.brand-panel::after {
+  content: "";
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  right: -260px;
+  bottom: -300px;
+  border-radius: 50%;
+  border: 90px solid rgba(255,255,255,.045);
+}
+
+.brand-content {
+  position: relative;
+  z-index: 1;
+  max-width: 560px;
+}
+
+.logo-mark {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 38px;
+  margin-bottom: 22px;
+}
+
+.logo-mark span {
+  width: 10px;
+  border-radius: 10px 10px 3px 3px;
+  background: #d8f0df;
+  transform: skew(-18deg);
+}
+
+.logo-mark span:nth-child(1) { height: 22px; }
+.logo-mark span:nth-child(2) { height: 31px; }
+.logo-mark span:nth-child(3) { height: 38px; }
+
+.brand-content h1 {
+  margin: 0;
+  font-size: clamp(38px, 4vw, 58px);
+  letter-spacing: -2px;
+  line-height: 1;
+}
+
+.tagline {
+  margin: 18px 0 26px;
+  font-size: clamp(23px, 2.4vw, 34px);
+  line-height: 1.15;
+  font-weight: 300;
+}
+
+.tagline strong { font-weight: 700; }
+
+.description {
+  max-width: 480px;
+  margin: 0;
+  color: rgba(255,255,255,.84);
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+.brand-footer {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  max-width: 680px;
+}
+
+.brand-footer div {
+  border-left: 1px solid rgba(255,255,255,.2);
+  padding-left: 16px;
+}
+
+.brand-footer b {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: #cbe9d6;
+}
+
+.brand-footer span {
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(255,255,255,.8);
+}
+
+.login-panel {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 48px 8%;
+  background: #fff;
+}
+
+.coopvale-logo {
+  display: block;
+  width: 190px;
+  height: auto;
+  object-fit: contain;
+  margin: 0 auto 18px;
+}
+
+.login-card {
+  width: min(440px, 100%);
+  padding: 24px 24px 26px;
+  border-radius: 18px;
+  background: #fff8d9;
+}
+
+.login-card h2 {
+  margin: 0;
+  font-size: 32px;
+  letter-spacing: -.8px;
+}
+
+.subtitle {
+  margin: 8px 0 34px;
+  color: #aaa998;
+  font-size: 14px;
+}
+
+.login-card label {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.login-card input {
+  width: 100%;
+  height: 50px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 15px;
+  margin-bottom: 20px;
+  outline: none;
+  color: var(--text);
+  background: #fffef0;
+  font-size: 15px;
+  transition: border .2s, box-shadow .2s;
+}
+
+.login-card input:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(23,107,69,.10);
+}
+
+.password-wrap {
+  position: relative;
+}
+
+.password-wrap input {
+  padding-right: 48px;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 8px;
+  top: 5px;
+  height: 40px;
+  width: 40px;
+  border: 0;
+  background: transparent;
+  color: #87958f;
+  cursor: pointer;
+}
+
+.forgot {
+  display: block;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: #73a83f;
+  font-size: 13px;
+  cursor: pointer;
+  margin: -3px 0 20px;
+}
+
+.submit-button,
+.offline-button {
+  width: 100%;
+  height: 50px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.submit-button {
+  border: 0;
+  color: #4e4d1d;
+  background: #d9d74f;
+  transition: background .2s, transform .1s;
+}
+
+.submit-button:hover {
+  background: #c9c64a;
+}
+
+.submit-button:active {
+  transform: translateY(1px);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 25px 0;
+  color: #9aa6a1;
+  font-size: 12px;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: #cbc7a9;
+}
+
+.offline-button {
+  border: 1px solid #cfdad4;
+  color: var(--green-dark);
+  background: #faf9e9;
+  font-weight: 600;
+}
+
+.offline-button:hover {
+  background: var(--green-soft);
+}
+
+.message {
+  min-height: 20px;
+  margin: 15px 0 0;
+  text-align: center;
+  color: var(--green);
+  font-size: 13px;
+}
+
+.copyright {
+  width: min(440px, 100%);
+  margin-top: 50px;
+  text-align: center;
+  color: #8e8d83;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.copyright span {
+  color: #9e9d92;
+}
+
+@media (max-width: 850px) {
+  .login-page {
+    grid-template-columns: 1fr;
+  }
+
+  .brand-panel {
+    min-height: auto;
+    padding: 45px 8%;
+  }
+
+  .brand-footer {
+    margin-top: 70px;
+  }
+
+  .login-panel {
+    min-height: auto;
+    padding: 45px 8% 35px;
+  }
+}
+
+@media (max-width: 560px) {
+  .brand-footer {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .brand-footer div {
+    border-left: 0;
+    border-top: 1px solid rgba(255,255,255,.2);
+    padding: 14px 0 0;
+  }
+}
