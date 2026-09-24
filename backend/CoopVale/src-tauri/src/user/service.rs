@@ -1,14 +1,22 @@
 use rusqlite::Connection;
 use crate::user::model::User;         
-use crate::user::repository;          
+use crate::user::repository;
+use regex::Regex;      
 
 pub fn register(conn: &Connection, name: &str, email: &str, raw_password: &str) -> Result<i32, String> {
+    let email_regex = Regex::new(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$").unwrap();
+    if !email_regex.is_match(email) {
+        return Err("Formato de e-mail inválido".to_string());
+    }
+
     if raw_password.len() < 6 {
         return Err("A senha deve ter pelo menos 6 caracteres".to_string());
     }
+    
     if repository::find_by_email(conn, email).map_err(|e| e.to_string())?.is_some() {
         return Err("Já existe um usuário com esse e-mail".to_string());
     }
+    
     let user = User::new(name, email, raw_password).map_err(|e| e.to_string())?;
     repository::insert(conn, &user).map_err(|e| e.to_string())
 }
