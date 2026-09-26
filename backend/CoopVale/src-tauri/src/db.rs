@@ -50,11 +50,27 @@ fn create_tables(conn: &Connection) -> Result<()> {
         [],
     )?;
     conn.execute(
+        "CREATE TABLE IF NOT EXISTS produto (
+            id                           INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome                         TEXT NOT NULL,
+            unidade_de_medida            TEXT NOT NULL,
+            categoria                    TEXT NOT NULL,
+            preco_de_referencia_centavos INTEGER NOT NULL CHECK (preco_de_referencia_centavos > 0),
+            status                       TEXT NOT NULL DEFAULT 'Ativo'
+                                        CHECK (status IN ('Ativo', 'Desativado'))
+        )",
+        [],
+    )?;
+    conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_contrato_instituicao ON contrato(instituicao_id)",
         [],
     )?;
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_contrato_status_termino ON contrato(status, data_termino)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_produto_status ON produto(status)",
         [],
     )?;
     Ok(())
