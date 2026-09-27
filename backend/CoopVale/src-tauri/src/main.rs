@@ -5,6 +5,7 @@ mod user;
 mod auth;
 mod institution;
 mod contract;
+mod contractItem;
 mod Product;
 
 use auth::commands as auth_commands;
@@ -42,6 +43,13 @@ fn main() {
             Product::commands::deactivate_product,
             Product::commands::get_product,
             Product::commands::list_products,
+            contractItem::commands::create_contract_item,
+            contractItem::commands::update_contract_item,
+            contractItem::commands::delete_contract_item,
+            contractItem::commands::get_contract_item,
+            contractItem::commands::list_contract_items,
+            contractItem::commands::list_contract_items_by_contract,
+            contractItem::commands::register_contract_item_delivery,
         ])
         .run(tauri::generate_context!())
         .expect("erro ao rodar a aplicação Tauri");
