@@ -32,15 +32,6 @@ pub fn update(conn: &Connection, id: i32, data: &ContractItemData) -> Result<usi
 	)
 }
 
-pub fn register_delivery(conn: &Connection, id: i32, quantity: i32) -> Result<usize> {
-	conn.execute(
-		"UPDATE item_contrato
-		    SET quantidade_entregue = quantidade_entregue + ?1
-		  WHERE id = ?2 AND ?1 <= quantidade - quantidade_entregue",
-		params![quantity, id],
-	)
-}
-
 pub fn delete(conn: &Connection, id: i32) -> Result<usize> {
 	conn.execute("DELETE FROM item_contrato WHERE id = ?1", [id])
 }

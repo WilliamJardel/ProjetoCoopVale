@@ -51,6 +51,9 @@ fn ensure_contract_editable(conn: &Connection, contract_id: i32) -> Result<(), S
 }
 
 pub fn create(conn: &Connection, data: ContractItemData) -> Result<ContractItem, String> {
+	if data.delivered_qtd != 0 {
+		return Err("Registre as entregas após cadastrar o item do contrato".to_string());
+	}
 	validate(conn, &data)?;
 	let id = repository::insert(conn, &data).map_err(error_message)?;
 	repository::find_by_id(conn, id)
@@ -66,6 +69,9 @@ pub fn update(
 	let current = repository::find_by_id(conn, id)
 		.map_err(error_message)?
 		.ok_or_else(|| "Item do contrato não encontrado".to_string())?;
+	if data.delivered_qtd != current.delivered_qtd {
+		return Err("A quantidade entregue deve ser alterada pelos registros de entrega".to_string());
+	}
 	if let Some(current_contract_id) = current.contract_id {
 		ensure_contract_editable(conn, current_contract_id)?;
 	}
@@ -112,26 +118,3 @@ pub fn list_by_contract(conn: &Connection, contract_id: i32) -> Result<Vec<Contr
 	repository::find_by_contract(conn, contract_id).map_err(error_message)
 }
 
-pub fn register_delivery(
-	conn: &Connection,
-	id: i32,
-	quantity: i32,
-) -> Result<ContractItem, String> {
-	if quantity <= 0 {
-		return Err("A quantidade entregue deve ser maior que zero".to_string());
-	}
-	let current = repository::find_by_id(conn, id)
-		.map_err(error_message)?
-		.ok_or_else(|| "Item do contrato não encontrado".to_string())?;
-	if let Some(contract_id) = current.contract_id {
-		ensure_contract_editable(conn, contract_id)?;
-	}
-
-	let affected = repository::register_delivery(conn, id, quantity).map_err(error_message)?;
-	if affected == 0 {
-		return Err("A entrega excede a quantidade restante do item".to_string());
-	}
-	repository::find_by_id(conn, id)
-		.map_err(error_message)?
-		.ok_or_else(|| "Item do contrato não encontrado após registrar a entrega".to_string())
-}

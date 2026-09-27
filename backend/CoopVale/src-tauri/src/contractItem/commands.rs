@@ -59,13 +59,3 @@ pub fn list_contract_items_by_contract(
 	service::list_by_contract(&conn, contract_id)
 }
 
-#[tauri::command]
-pub fn register_item_delivery(
-	auth: State<AuthState>,
-	id: i32,
-	quantity: i32,
-) -> Result<ContractItem, String> {
-	auth.require_authenticated()?;
-	let conn = db::connect().map_err(|e| e.to_string())?;
-	service::register_delivery(&conn, id, quantity)
-}
