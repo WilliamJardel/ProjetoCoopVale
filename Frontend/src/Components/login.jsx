@@ -1,13 +1,16 @@
 import React, { useState } from "react";
 import "../Styles/login.css";
+import { useAuth } from "../context/AuthContext"; // Importação do contexto
 
-function Login() {
+function Login({ onLoginSuccess }) {
+  const { login } = useAuth(); // Hook de autenticação
   const [showPassword, setShowPassword] = useState(false);
   const [user, setUser] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
     if (!user.trim() || !password.trim()) {
@@ -15,7 +18,26 @@ function Login() {
       return;
     }
 
-    setMessage("Demonstração: credenciais recebidas.");
+    setMessage("");
+    setIsSubmitting(true);
+
+    try {
+      // Chama o login do Rust via contexto
+      await login(user, password);
+      
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      }
+    } catch (err) {
+      // Exibe o erro retornado do Rust (ex: senha errada ou bloqueio por limite)
+      if (typeof err === "string") {
+        setMessage(err);
+      } else {
+        setMessage("E-mail ou senha inválidos.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -61,7 +83,7 @@ function Login() {
       <section className="login-panel">
         <img
           className="coopvale-logo"
-          src="./public/img/iconCoopVale.png"
+          src="C:\Users\João Hélio\Documents\ProjetoCoopVale\ProjetoCoopVale\Frontend\src\public\img\iconCoopVale.png"
           alt="CoopVale"
         />
 
@@ -77,6 +99,7 @@ function Login() {
               value={user}
               onChange={(event) => setUser(event.target.value)}
               autoComplete="username"
+              disabled={isSubmitting}
             />
 
             <label htmlFor="password">Senha</label>
@@ -88,6 +111,7 @@ function Login() {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 autoComplete="current-password"
+                disabled={isSubmitting}
               />
 
               <button
@@ -107,11 +131,11 @@ function Login() {
                 setMessage("A recuperação de senha será disponibilizada nesta etapa.")
               }
             >
-              Esqueci minha senha
+              Esqueceu minha senha
             </button>
 
-            <button type="submit" className="submit-button">
-              Entrar
+            <button type="submit" className="submit-button" disabled={isSubmitting}>
+              {isSubmitting ? "Entrando..." : "Entrar"}
             </button>
           </form>
 
