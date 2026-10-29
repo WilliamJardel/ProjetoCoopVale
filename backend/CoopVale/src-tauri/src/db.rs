@@ -126,6 +126,21 @@ fn create_tables(conn: &Connection) -> Result<()> {
         "CREATE INDEX IF NOT EXISTS idx_entrega_por_item ON entrega(item_contrato_id)",
         [],
     )?;
+        conn.execute(
+        "CREATE TABLE IF NOT EXISTS pagamento (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            contrato_id     INTEGER NOT NULL
+                            REFERENCES contrato(id) ON DELETE RESTRICT,
+            valor_centavos  INTEGER NOT NULL CHECK (valor_centavos > 0),
+            data_pagamento  TEXT NOT NULL,
+            observacao      TEXT NOT NULL DEFAULT ''
+        )",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_pagamento_por_contrato ON pagamento(contrato_id)",
+        [],
+    )?;
     Ok(())
 }
 

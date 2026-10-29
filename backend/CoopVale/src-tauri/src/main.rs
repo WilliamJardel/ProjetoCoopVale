@@ -8,12 +8,12 @@ mod contract;
 mod contractItem;
 mod delivery;
 mod Product;
+mod payment;
 
 use auth::commands as auth_commands;
 use auth::rate_limit::LoginAttempts;
 use auth::session::AuthState;
 use user::commands as user_commands;
-use Product::commands as product_commands;
 
 fn main() {
     tauri::Builder::default()
@@ -56,6 +56,13 @@ fn main() {
             delivery::commands::get_delivery,
             delivery::commands::list_deliveries,
             delivery::commands::list_deliveries_by_contract,
+            payment::commands::create_payment,
+            payment::commands::update_payment,
+            payment::commands::delete_payment,
+            payment::commands::get_payment,
+            payment::commands::list_payments,
+            payment::commands::list_payments_by_contract,
+            payment::commands::get_contract_balance,
         ])
         .run(tauri::generate_context!())
         .expect("erro ao rodar a aplicação Tauri");

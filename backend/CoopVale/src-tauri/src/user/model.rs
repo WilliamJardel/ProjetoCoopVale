@@ -1,5 +1,5 @@
 use serde:: {Deserialize, Serialize};
-use rusqlite:: {Connection, Result, Row};
+use rusqlite:: {Result, Row};
 use bcrypt::{hash, verify, DEFAULT_COST};
 use chrono::Utc;
 

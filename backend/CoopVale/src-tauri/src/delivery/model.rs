@@ -3,7 +3,6 @@ use crate::contractItem::model::ContractItem;
 use chrono::NaiveDate;
 use rusqlite::{types::Type, Error, Result, Row};
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DeliveryData {
