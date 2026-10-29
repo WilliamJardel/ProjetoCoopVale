@@ -120,7 +120,6 @@ mod tests {
         conn
     }
 
-    /// Cria instituição + contrato de R$ 1.000,00 e devolve o id do contrato.
     fn new_contract(conn: &Connection) -> i32 {
         let inst = institution_service::create(
             conn,
@@ -222,7 +221,6 @@ mod tests {
         let mut conn = setup_db();
         let c = new_contract(&conn);
         let p = create(&mut conn, payment_data(c, 600_00)).unwrap();
-        // 600 -> 1000 só cabe se o valor antigo não for contado duas vezes
         update(&mut conn, p.id, payment_data(c, 1_000_00)).unwrap();
         assert_eq!(get_contract_balance(&conn, c).unwrap().remaining_cents, 0);
         assert!(update(&mut conn, p.id, payment_data(c, 1_000_01)).is_err());

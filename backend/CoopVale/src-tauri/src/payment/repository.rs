@@ -61,7 +61,6 @@ pub fn find_by_contract(conn: &Connection, contract_id: i32) -> Result<Vec<Payme
     rows.collect()
 }
 
-/// Soma os pagamentos de um contrato, opcionalmente ignorando um pagamento (usado na edição).
 pub fn sum_by_contract(
     conn: &Connection,
     contract_id: i32,
