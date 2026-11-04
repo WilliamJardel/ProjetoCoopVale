@@ -54,7 +54,7 @@ pub fn create(conn: &Connection, data: ContractItemData) -> Result<ContractItem,
 	if data.delivered_qtd != 0 {
 		return Err("Registre as entregas após cadastrar o item do contrato".to_string());
 	}
-	validate(conn, &data)?;
+	validate(conn, &data, None)?;
 	let id = repository::insert(conn, &data).map_err(error_message)?;
 	repository::find_by_id(conn, id)
 		.map_err(error_message)?
@@ -117,4 +117,3 @@ pub fn list_by_contract(conn: &Connection, contract_id: i32) -> Result<Vec<Contr
 		.ok_or_else(|| "Contrato não encontrado".to_string())?;
 	repository::find_by_contract(conn, contract_id).map_err(error_message)
 }
-

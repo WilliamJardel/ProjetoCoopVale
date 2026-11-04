@@ -691,3 +691,34 @@ O comando deve obrigatoriamente falhar caso a validação das FKs esteja funcion
 ---
 
 > 💡 **Suporte:** Se algum passo retornar um erro diferente do esperado, copie a saída completa do Console (objeto do erro) e revise a lógica do *service* no Rust.
+
+## 🖥️ Frontend
+
+O frontend usa Vite + TypeScript e fica em `src/`. A organização separa componentes, chamadas Tauri, tipos e estilos:
+
+```text
+src/
+├── app.ts
+├── main.ts
+├── components/
+├── services/
+├── styles/
+├── types/
+└── utils/
+```
+
+Para executar e compilar a interface, use os comandos do projeto:
+
+```bash
+npm run dev
+npm run build
+```
+
+As telas de login, listagem, cadastro e atualização de entregas usam os comandos Tauri existentes e os dados do banco local. É necessário entrar com uma conta já cadastrada.
+
+Em builds de desenvolvimento (`tauri dev`), o app cria automaticamente um usuário placeholder se ele ainda não existir:
+
+- E-mail: `emailteste@gmail.com`
+- Senha: `teste123`
+
+Esse usuário não é criado em builds de produção.

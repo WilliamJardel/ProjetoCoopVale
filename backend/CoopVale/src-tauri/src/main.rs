@@ -19,6 +19,22 @@ fn main() {
     tauri::Builder::default()
         .manage(AuthState::new())
         .manage(LoginAttempts::new())
+        .setup(|_| {
+            #[cfg(debug_assertions)]
+            {
+                let conn = db::connect()?;
+                let email = "emailteste@gmail.com";
+                if user::repository::find_by_email(&conn, email)?.is_none() {
+                    user::service::register(&conn, "Usuário de teste", email, "teste123")
+                        .map_err(|error| {
+                            std::io::Error::other(format!(
+                                "Não foi possível criar o usuário de desenvolvimento: {error}"
+                            ))
+                        })?;
+                }
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             user_commands::register_user,
             user_commands::authenticate_user,
