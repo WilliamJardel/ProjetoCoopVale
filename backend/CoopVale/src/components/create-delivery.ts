@@ -48,6 +48,7 @@ export function renderCreateDelivery(
           <label class="filter-field create-field"><span>Data da entrega</span><input name="delivery_date" type="date" value="${localDate}" required /></label>
           <label class="filter-field create-field"><span>Quantidade solicitada</span><input name="solicited_quantity" type="number" min="1" required /></label>
           <label class="filter-field create-field"><span>Quantidade entregue</span><input name="delivered_qtd" type="number" min="1" required /></label>
+          <label class="filter-field create-field"><span>Status</span><select name="status" required><option value="" selected disabled>Selecione o status</option><option value="Pendente">Pendente</option><option value="Entregue">Entregue</option></select></label>
         </div>
         <label class="filter-field create-field"><span>Observação</span><textarea name="note" rows="3" maxlength="500" placeholder="Observações sobre a entrega"></textarea></label>
         <div class="detail-actions create-actions"><button class="button button-outline" type="button" data-action="back-to-list">Cancelar</button><button class="button button-primary" type="submit" ${items.length ? "" : "disabled"}>Cadastrar entrega ${icon("check")}</button></div>

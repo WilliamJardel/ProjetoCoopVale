@@ -48,6 +48,7 @@ export interface BackendDelivery {
   delivered_qtd: number;
   delivery_date: string;
   note: string;
+  status: "Pendente" | "Entregue";
   contract: Contract;
 }
 
@@ -57,4 +58,5 @@ export interface DeliveryData {
   delivered_qtd: number;
   delivery_date: string;
   note: string;
+  status: "Pendente" | "Entregue";
 }

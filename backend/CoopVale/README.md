@@ -716,6 +716,8 @@ npm run build
 
 As telas de login, listagem, cadastro e atualização de entregas usam os comandos Tauri existentes e os dados do banco local. É necessário entrar com uma conta já cadastrada.
 
+O status da entrega (`Pendente` ou `Entregue`) é escolhido manualmente e salvo no banco, sem ser inferido pela quantidade entregue. Bancos existentes recebem o status `Pendente` nas entregas antigas durante a migração.
+
 Em builds de desenvolvimento (`tauri dev`), o app cria automaticamente um usuário placeholder se ele ainda não existir:
 
 - E-mail: `emailteste@gmail.com`

@@ -1,8 +1,4 @@
-export type DeliveryStatus =
-  | "Pendente"
-  | "Aguardando conferência"
-  | "Em transporte"
-  | "Entregue";
+export type DeliveryStatus = "Pendente" | "Entregue";
 
 export interface Delivery {
   id: number;

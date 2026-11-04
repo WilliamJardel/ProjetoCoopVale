@@ -23,12 +23,13 @@ export function renderDeliveryDetail(delivery: Delivery): string {
           </section>
 
           <section class="detail-card quantity-card">
-            <h2>Quantidade entregue</h2>
+            <h2>Atualizar entrega</h2>
             <div class="quantity-table">
               <div class="quantity-row quantity-header"><strong>Produto</strong><strong>Quantidade solicitada</strong><strong>Quantidade entregue</strong></div>
               <div class="quantity-row"><span>${escapeHtml(delivery.product)}</span><span>${delivery.quantity} ${escapeHtml(delivery.unit)}</span><label class="quantity-input"><input id="actual-quantity" type="number" min="1" max="${delivery.quantity}" value="${Math.max(1, delivery.deliveredQuantity)}" aria-label="Quantidade entregue" /><span>${escapeHtml(delivery.unit)}</span></label></div>
             </div>
-            <div class="loss-total">${icon("receipt")}<strong>Quantidade pendente</strong><strong id="loss-value">${Math.max(0, delivery.quantity - delivery.deliveredQuantity)} ${escapeHtml(delivery.unit)}</strong></div>
+            <label class="filter-field create-field delivery-status-field"><span>Status da entrega</span><select id="delivery-status" name="status" required><option value="Pendente" ${delivery.status === "Pendente" ? "selected" : ""}>Pendente</option><option value="Entregue" ${delivery.status === "Entregue" ? "selected" : ""}>Entregue</option></select></label>
+            <label class="filter-field create-field delivery-comment-field"><span>Comentário da entrega</span><textarea id="delivery-note" maxlength="500" rows="3" placeholder="Adicione um comentário">${escapeHtml(delivery.note)}</textarea></label>
           </section>
         </div>
       </div>

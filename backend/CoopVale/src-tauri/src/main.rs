@@ -22,7 +22,7 @@ fn main() {
         .setup(|_| {
             #[cfg(debug_assertions)]
             {
-                let conn = db::connect()?;
+                let mut conn = db::connect()?;
                 let email = "emailteste@gmail.com";
                 if user::repository::find_by_email(&conn, email)?.is_none() {
                     user::service::register(&conn, "Usuário de teste", email, "teste123")

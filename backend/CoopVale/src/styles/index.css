@@ -80,6 +80,7 @@ h1 { color: var(--olive); font-family: "Segoe UI", Arial, sans-serif; font-size:
 .input-wrap input[type="date"] { font-size: 8px; }
 .date-divider { color: #9b9c96; font-size: 9px; }
 .filter-field select { font-size: 10px; outline: 0; }
+.filter-actions { display: flex; align-items: center; gap: 7px; }
 .button-filter { min-height: 36px; padding: 0 12px; background: var(--green); color: #fff; white-space: nowrap; }
 .button-filter:hover { background: var(--green-dark); }
 .button-filter .icon { width: 14px; height: 14px; }
@@ -170,6 +171,10 @@ tbody tr:hover { background: #fbfbf8; }
 .create-form { display: grid; max-width: 760px; gap: 18px; margin-left: 20px; }
 .create-fields-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .create-field { gap: 7px; }
+.delivery-status-field { max-width: 260px; margin-top: 14px; }
+.delivery-comment-field { max-width: 520px; margin-top: 14px; }
+.delivery-comment-field textarea { resize: vertical; }
+.delivery-comment { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .create-field textarea { resize: vertical; }
 .form-empty { padding: 13px; border-radius: 6px; background: #f7f6ed; color: #777970; font-size: 11px; }
 .create-actions { margin: 0; }
@@ -183,7 +188,7 @@ tbody tr:hover { background: #fbfbf8; }
   .workspace { margin-left: 190px; }
   .page-content { padding-right: 22px; padding-left: 22px; }
   .filter-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .button-filter { grid-column: 2; justify-self: end; }
+  .filter-actions { grid-column: 2; justify-self: end; }
   .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .detail-actions { margin-top: 14px; }
 }
@@ -209,7 +214,8 @@ tbody tr:hover { background: #fbfbf8; }
   .summary-card small { font-size: 7px; }
   .summary-arrow { top: 31px; right: 7px; font-size: 18px; }
   .filter-panel { grid-template-columns: 1fr; gap: 9px; padding: 11px; }
-  .button-filter { grid-column: auto; justify-self: stretch; }
+  .filter-actions { grid-column: auto; justify-self: stretch; }
+  .filter-actions > .button { flex: 1; padding: 0 8px; font-size: 9px; }
   .table-heading { padding: 0 11px; }
   .table-heading .subtle-button { font-size: 9px; }
   .table-footer { padding: 0 9px; }

@@ -66,17 +66,19 @@ export function renderDeliveryList(
           <span>Status</span>
           <select id="status-filter"><option value="">Todos</option><option value="Pendente">Pendente</option><option value="Entregue">Entregue</option></select>
         </label>
-        <button class="button button-filter" id="apply-filters">${icon("filter")} Aplicar filtros</button>
+        <div class="filter-actions">
+          <button class="button button-filter" id="apply-filters">${icon("filter")} Aplicar filtros</button>
+          <button class="button button-outline" id="reset-filters">Reiniciar filtros</button>
+        </div>
       </section>
 
       <section class="table-panel">
         <div class="table-heading">
           <div><span class="table-heading-icon">${icon("calendar")}</span><h2>Entregas realizadas</h2></div>
-          <button class="subtle-button" id="clear-filters">Limpar filtros</button>
         </div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Número</th><th>Data da entrega</th><th>Contrato</th><th>Instituição</th><th>Produtos</th><th>Quantidade</th><th>Status</th><th class="actions-heading">Ações</th></tr></thead>
+            <thead><tr><th>Número</th><th>Data da entrega</th><th>Contrato</th><th>Instituição</th><th>Produtos</th><th>Quantidade</th><th>Comentário</th><th>Status</th><th class="actions-heading">Ações</th></tr></thead>
             <tbody id="delivery-rows">
               ${deliveries
                 .map(
@@ -88,8 +90,9 @@ export function renderDeliveryList(
                       <td>${escapeHtml(delivery.institution)}</td>
                       <td>${escapeHtml(delivery.product)}</td>
                       <td>${delivery.deliveredQuantity} ${escapeHtml(delivery.unit)}</td>
+                      <td class="delivery-comment" title="${escapeHtml(delivery.note)}">${escapeHtml(delivery.note || "—")}</td>
                       <td><span class="status-badge status-${statusClass(delivery.status)}"><i></i>${delivery.status}</span></td>
-                      <td><div class="row-actions"><button class="icon-button" data-action="view-delivery" aria-label="Ver entrega ${escapeHtml(delivery.displayId)}">${icon("eye")}</button><button class="icon-button" data-action="row-menu" aria-label="Mais opções">${icon("more")}</button></div></td>
+                      <td><div class="row-actions"><button class="icon-button" data-action="edit-delivery" aria-label="Editar entrega ${escapeHtml(delivery.displayId)}">${icon("pencil")}</button></div></td>
                     </tr>`,
                 )
                 .join("")}

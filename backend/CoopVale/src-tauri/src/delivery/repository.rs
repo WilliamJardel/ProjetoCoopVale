@@ -8,14 +8,15 @@ const JOINS: &str = "FROM entrega
 
 pub fn insert(conn: &Connection, data: &DeliveryData) -> Result<i32> {
     conn.execute(
-        "INSERT INTO entrega (item_contrato_id, quantidade_solicitada, quantidade_entregue, data_entrega, observacao)
-         VALUES (?1, ?2, ?3, ?4, ?5)",
+        "INSERT INTO entrega (item_contrato_id, quantidade_solicitada, quantidade_entregue, data_entrega, observacao, status)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
         params![
             data.contract_item_id,
             data.solicited_quantity,
             data.delivered_qtd,
             data.delivery_date,
-            data.note
+            data.note,
+            data.status.as_str()
         ],
     )?;
     Ok(conn.last_insert_rowid() as i32)
@@ -25,14 +26,15 @@ pub fn update(conn: &Connection, id: i32, data: &DeliveryData) -> Result<usize> 
     conn.execute(
         "UPDATE entrega
             SET item_contrato_id = ?1, quantidade_solicitada = ?2, quantidade_entregue = ?3,
-                data_entrega = ?4, observacao = ?5
-          WHERE id = ?6",
+                data_entrega = ?4, observacao = ?5, status = ?6
+          WHERE id = ?7",
         params![
             data.contract_item_id,
             data.solicited_quantity,
             data.delivered_qtd,
             data.delivery_date,
             data.note,
+            data.status.as_str(),
             id
         ],
     )

@@ -118,10 +118,27 @@ fn create_tables(conn: &Connection) -> Result<()> {
             quantidade_entregue   INTEGER NOT NULL
                                    CHECK (quantidade_entregue > 0 AND quantidade_entregue <= quantidade_solicitada),
             data_entrega           TEXT NOT NULL,
-            observacao             TEXT NOT NULL DEFAULT ''
+            observacao             TEXT NOT NULL DEFAULT '',
+            status                 TEXT NOT NULL DEFAULT 'Pendente'
+                                   CHECK (status IN ('Pendente', 'Entregue'))
         )",
         [],
     )?;
+    let has_delivery_status = {
+        let mut stmt = conn.prepare("PRAGMA table_info(entrega)")?;
+        let columns = stmt.query_map([], |row| row.get::<_, String>(1))?;
+        columns
+            .collect::<Result<Vec<_>>>()?
+            .iter()
+            .any(|column| column == "status")
+    };
+    if !has_delivery_status {
+        conn.execute(
+            "ALTER TABLE entrega ADD COLUMN status TEXT NOT NULL DEFAULT 'Pendente'
+             CHECK (status IN ('Pendente', 'Entregue'))",
+            [],
+        )?;
+    }
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_entrega_por_item ON entrega(item_contrato_id)",
         [],
@@ -182,5 +199,51 @@ mod tests {
             )
             .unwrap();
         assert_eq!(migrated_item, (1, None));
+    }
+
+    #[test]
+    fn adds_manual_pending_status_to_existing_deliveries() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch(
+            "CREATE TABLE entrega (
+                id INTEGER PRIMARY KEY,
+                item_contrato_id INTEGER NOT NULL,
+                quantidade_solicitada INTEGER NOT NULL,
+                quantidade_entregue INTEGER NOT NULL,
+                data_entrega TEXT NOT NULL,
+                observacao TEXT NOT NULL DEFAULT ''
+            );
+            INSERT INTO entrega (id, item_contrato_id, quantidade_solicitada, quantidade_entregue, data_entrega)
+            VALUES (1, 1, 50, 48, '2026-10-10');",
+        )
+        .unwrap();
+
+        init(&conn).unwrap();
+
+        let status: String = conn
+            .query_row("SELECT status FROM entrega WHERE id = 1", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(status, "Pendente");
+
+        conn.execute(
+            "UPDATE entrega SET status = 'Entregue' WHERE id = 1",
+            [],
+        )
+        .unwrap();
+        let (status, delivered, requested): (String, i64, i64) = conn
+            .query_row(
+                "SELECT status, quantidade_entregue, quantidade_solicitada FROM entrega WHERE id = 1",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .unwrap();
+        assert_eq!((status.as_str(), delivered, requested), ("Entregue", 48, 50));
+
+        assert!(conn
+            .execute(
+                "UPDATE entrega SET status = 'Outro' WHERE id = 1",
+                [],
+            )
+            .is_err());
     }
 }

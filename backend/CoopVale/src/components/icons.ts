@@ -19,6 +19,7 @@ const paths: Record<string, string> = {
   check: '<path d="m5 12 4 4L19 6"/>',
   close: '<path d="m18 6-12 12M6 6l12 12"/>',
   plus: '<path d="M12 5v14m-7-7h14"/>',
+  pencil: '<path d="m16 5 3 3M4 20l4.5-1 10.1-10.1a2.1 2.1 0 0 0-3-3L5.5 16z"/>',
 };
 
 export function icon(name: string, className = ""): string {

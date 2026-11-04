@@ -38,7 +38,6 @@ function mapDelivery(
   item: BackendDelivery,
   institutionsById: Map<number, string>,
 ): Delivery {
-  const status = item.delivered_qtd >= item.solicited_quantity ? "Entregue" : "Pendente";
   return {
     id: item.id,
     displayId: `EN ${String(item.id).padStart(6, "0")}`,
@@ -54,7 +53,7 @@ function mapDelivery(
     deliveredQuantity: item.delivered_qtd,
     contractItemId: item.contract_item.id,
     note: item.note,
-    status,
+    status: item.status,
   };
 }
 
@@ -172,6 +171,7 @@ async function createDelivery(form: HTMLFormElement): Promise<void> {
   const itemId = Number(formData.get("contract_item_id"));
   const requested = Number(formData.get("solicited_quantity"));
   const delivered = Number(formData.get("delivered_qtd"));
+  const status = String(formData.get("status"));
   const date = String(formData.get("delivery_date"));
   const item = contractItems.find((contractItem) => contractItem.id === itemId);
   if (!item || !item.contract_id) {
@@ -183,7 +183,8 @@ async function createDelivery(form: HTMLFormElement): Promise<void> {
     !Number.isInteger(delivered) ||
     requested <= 0 ||
     delivered <= 0 ||
-    delivered > requested
+    delivered > requested ||
+    (status !== "Pendente" && status !== "Entregue")
   ) {
     showToast("Informe quantidades válidas; a quantidade entregue deve ser maior que zero e não pode superar a solicitada.");
     return;
@@ -203,6 +204,7 @@ async function createDelivery(form: HTMLFormElement): Promise<void> {
     delivered_qtd: delivered,
     delivery_date: date,
     note: String(formData.get("note") ?? ""),
+    status,
   };
   await deliveryApi.create(data);
   await loadData();
@@ -214,9 +216,15 @@ async function saveDelivery(): Promise<void> {
   if (!selectedDelivery) return;
   const quantity = document.querySelector<HTMLInputElement>("#actual-quantity");
   const delivered = Number(quantity?.value);
+  const status = document.querySelector<HTMLSelectElement>("#delivery-status")?.value;
+  const note = document.querySelector<HTMLTextAreaElement>("#delivery-note")?.value.trim() ?? "";
   if (!Number.isInteger(delivered) || delivered <= 0 || delivered > selectedDelivery.quantity) {
     showToast("A quantidade entregue deve ser maior que zero e não pode superar a quantidade solicitada.");
     quantity?.focus();
+    return;
+  }
+  if (status !== "Pendente" && status !== "Entregue") {
+    showToast("Selecione um status válido para a entrega.");
     return;
   }
   const data: DeliveryData = {
@@ -224,7 +232,8 @@ async function saveDelivery(): Promise<void> {
     solicited_quantity: selectedDelivery.quantity,
     delivered_qtd: delivered,
     delivery_date: selectedDelivery.date,
-    note: selectedDelivery.note,
+    note,
+    status,
   };
   await deliveryApi.update(selectedDelivery.id, data);
   await loadData();
@@ -297,7 +306,7 @@ app.addEventListener("click", async (event) => {
     render();
     return;
   }
-  if (action === "view-delivery") {
+  if (action === "edit-delivery") {
     const row = target.closest<HTMLTableRowElement>("tr[data-id]");
     selectedDelivery = deliveries.find((item) => item.id === Number(row?.dataset.id)) ?? null;
     if (selectedDelivery) {
@@ -317,7 +326,6 @@ app.addEventListener("click", async (event) => {
     }
     return;
   }
-  if (action === "row-menu") showToast("Ações adicionais ainda não estão disponíveis.");
 });
 
 app.addEventListener("input", (event) => {
@@ -355,7 +363,7 @@ app.addEventListener("click", (event) => {
   const target = event.target;
   if (!(target instanceof Element)) return;
   if (target.closest("#apply-filters")) applyFilters();
-  if (target.closest("#clear-filters")) {
+  if (target.closest("#reset-filters")) {
     const search = document.querySelector<HTMLInputElement>("#delivery-search");
     const institution = document.querySelector<HTMLSelectElement>("#institution-filter");
     const status = document.querySelector<HTMLSelectElement>("#status-filter");
