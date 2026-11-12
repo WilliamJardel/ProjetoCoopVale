@@ -10,16 +10,29 @@ module.exports = {
     clean: true,
   },
 
+  devServer: {
+    host: "127.0.0.1",
+    port: 3000,
+    historyApiFallback: true,
+  },
+
   module: {
     rules: [
       {
         test: /\.(js|jsx)$/,
         exclude: /node_modules/,
-        use: "babel-loader"
+        use: "babel-loader",
       },
       {
         test: /\.css$/i,
         use: ["style-loader", "css-loader"],
+      },
+      {
+        test: /\.(png|jpe?g|gif|svg|ico)$/i,
+        type: "asset/resource",
+        generator: {
+          filename: "assets/[name][contenthash][ext]",
+        },
       },
     ],
   },

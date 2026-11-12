@@ -13,11 +13,11 @@
   "license": "ISC",
   "author": "Equipe 3 de PI1 2026.2",
   "type": "commonjs",
-  "main": "./Frontend/src/electron/main.js",
   "scripts": {
     "build": "webpack --mode production",
-    "start": "npm run build && electron .",
-    "dev": "webpack --mode development --watch"
+    "build:desktop": "npm --prefix backend/CoopVale run tauri -- build",
+    "start": "npm --prefix backend/CoopVale run tauri -- dev",
+    "dev": "webpack serve --mode development"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.12.1",
@@ -28,13 +28,12 @@
     "@babel/core": "^7.28.4",
     "@babel/preset-env": "^7.28.3",
     "@babel/preset-react": "^7.27.1",
-    "@tauri-apps/cli": "^2.12.1",
     "babel-loader": "^10.0.0",
     "css-loader": "^7.1.2",
-    "electron": "^44.4.5",
     "html-webpack-plugin": "^5.6.4",
     "style-loader": "^4.0.0",
     "webpack": "^5.101.3",
-    "webpack-cli": "^6.0.1"
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^6.1.0"
   }
 }

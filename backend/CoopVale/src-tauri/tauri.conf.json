@@ -4,10 +4,10 @@
   "version": "0.1.0",
   "identifier": "com.guilherme.coopvale",
   "build": {
-    "beforeDevCommand": "npm run dev",
-    "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm run build",
-    "frontendDist": "../dist"
+    "beforeDevCommand": "npm --prefix ../.. run dev",
+    "devUrl": "http://127.0.0.1:3000",
+    "beforeBuildCommand": "npm --prefix ../.. run build",
+    "frontendDist": "../../../Frontend/dist"
   },
   "app": {
     "withGlobalTauri": true,
