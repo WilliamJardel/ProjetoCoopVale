@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import "../Styles/login.css";
 import { useAuth } from "../context/AuthContext"; // Importação do contexto
+import iconCoopVale from "../public/img/iconCoopVale.png";
 
 function Login({ onLoginSuccess }) {
   const { login } = useAuth(); // Hook de autenticação
@@ -83,7 +84,7 @@ function Login({ onLoginSuccess }) {
       <section className="login-panel">
         <img
           className="coopvale-logo"
-          src="C:\Users\João Hélio\Documents\ProjetoCoopVale\ProjetoCoopVale\Frontend\src\public\img\iconCoopVale.png"
+          src={iconCoopVale}
           alt="CoopVale"
         />
 

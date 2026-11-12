@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import "../Styles/Contratos.css";
 import { useAuth } from "../context/AuthContext";
 import CadastrarInstituicao from "./CadastrarInstituicao";
+import iconCoopVale from "../public/img/iconCoopVale.png";
 
 function Contratos({ onNavigate }) {
   const [institutions, setInstitutions] = useState([]);
@@ -152,7 +153,7 @@ function Contratos({ onNavigate }) {
       <aside className="sidebar">
         <div className="sidebar-brand">
           <img
-            src="C:\Users\João Hélio\Documents\ProjetoCoopVale\ProjetoCoopVale\Frontend\src\public\img\iconCoopVale.png"
+            src={iconCoopVale}
             alt="CoopVale Logo"
             className="sidebar-logo"
           />

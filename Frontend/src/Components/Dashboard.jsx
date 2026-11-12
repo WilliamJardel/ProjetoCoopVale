@@ -1,6 +1,7 @@
 import React from "react";
-import "../Styles/dashboard.css";
+import "../Styles/Dashboard.css";
 import { useAuth } from "../context/AuthContext";
+import iconCoopVale from "../public/img/iconCoopVale.png";
 
 function Dashboard({ onNavigate }) {
   const { session, logout } = useAuth();
@@ -46,7 +47,7 @@ function Dashboard({ onNavigate }) {
       <aside className="sidebar">
         <div className="sidebar-brand">
           <img
-            src="C:\Users\João Hélio\Documents\ProjetoCoopVale\ProjetoCoopVale\Frontend\src\public\img\iconCoopVale.png"
+            src={iconCoopVale}
             alt="CoopVale Logo"
             className="sidebar-logo"
           />
