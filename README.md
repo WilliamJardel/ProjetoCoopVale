@@ -160,3 +160,10 @@ O comando gera o frontend e cria o pacote desktop Tauri.
 
 A pasta `Frontend/dist` não precisa ser versionada; ela é recriada pelos comandos
 de build e desenvolvimento.
+
+cd /home/guilherme/IdeaProjects/CoopVale/ProjetoCoopVale
+npm start
+
+
+npm install
+npm --prefix backend/CoopVale install

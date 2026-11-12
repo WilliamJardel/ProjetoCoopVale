@@ -6,7 +6,20 @@ Este documento apresenta o passo a passo para testar as regras de negócio e os 
 
 Antes de começar, vamos garantir que o banco de dados esteja limpo e que o Tauri não fique reiniciando a cada alteração no banco.
 
-Execute no terminal:
+Para compilar o usuário inicial, defina as credenciais no terminal que será usado para compilar e executar o aplicativo. O e-mail pode ser omitido para usar `admin@coopvale.com`; a senha é obrigatória e deve ter pelo menos 6 caracteres. O script de compilação guarda no binário somente o hash bcrypt da senha.
+
+No Bash, por exemplo:
+
+```bash
+export COOPVALE_ADMIN_EMAIL=admin@coopvale.com
+read -s -p "Senha inicial: " COOPVALE_ADMIN_PASSWORD
+printf '\n'
+export COOPVALE_ADMIN_PASSWORD
+```
+
+O usuário **Administrador** será criado no primeiro acesso ao banco, caso ainda não exista. Uma conta já existente com esse e-mail não será alterada. Não coloque a senha em arquivos versionados; em CI, use o armazenamento seguro de secrets.
+
+Com as variáveis ainda definidas, execute:
 
 ```bash
 cd ~/IdeaProjects/CoopVale/ProjetoCoopVale/backend/CoopVale/src-tauri
@@ -56,8 +69,8 @@ Vamos testar a criação de usuários, a proteção dos comandos e os limites de
 
 ```javascript
 await t("register_user", {
-  name: "Admin",
-  email: "admin@coopvale.com",
+  name: "Usuário de teste",
+  email: "teste@coopvale.com",
   password: "Senha@123"
 });
 ```
@@ -66,8 +79,8 @@ Teste o cadastro duplicado. O comando deve retornar um erro:
 
 ```javascript
 await t("register_user", {
-  name: "Admin",
-  email: "admin@coopvale.com",
+  name: "Usuário de teste",
+  email: "teste@coopvale.com",
   password: "Senha@123"
 });
 ```
@@ -82,7 +95,7 @@ await t("get_user", {
 });
 
 await t("authenticate_user", {
-  email: "admin@coopvale.com",
+  email: "teste@coopvale.com",
   password: "Senha@123"
 });
 ```
@@ -102,7 +115,7 @@ Faça login:
 ```javascript
 await t("login", {
   email: "admin@coopvale.com",
-  password: "Senha@123"
+  password: "<senha-definida-na-compilação>"
 });
 ```
 
