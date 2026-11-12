@@ -21,6 +21,7 @@ pub fn login(
                 email: user.email,
                 logged_in_at: Utc::now().to_rfc3339(),
             })
+            
         }
         None => {
             attempts.register_failure(email);

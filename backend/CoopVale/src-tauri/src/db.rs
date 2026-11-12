@@ -1,9 +1,38 @@
+use chrono::Utc;
 use rusqlite::{ffi, Connection, Error, Result};
+
+mod compiled_admin {
+    include!(concat!(env!("OUT_DIR"), "/compiled_admin.rs"));
+}
 
 pub fn connect() -> Result<Connection> {
     let conn = Connection::open("coopvale.db")?;
     init(&conn)?;
+    seed_compiled_admin(&conn)?;
     Ok(conn)
+}
+
+fn seed_compiled_admin(conn: &Connection) -> Result<()> {
+    let Some((email, password_hash)) = compiled_admin::INITIAL_ADMIN else {
+        return Ok(());
+    };
+
+    seed_user_with_hash(conn, email, password_hash)
+}
+
+fn seed_user_with_hash(conn: &Connection, email: &str, password_hash: &str) -> Result<()> {
+    if crate::user::repository::find_by_email(conn, email)?.is_none() {
+        let user = crate::user::model::User {
+            id: None,
+            name: "Administrador".to_string(),
+            email: email.to_string(),
+            password: password_hash.to_string(),
+            created_at: Some(Utc::now().to_rfc3339()),
+        };
+        crate::user::repository::insert(conn, &user)?;
+    }
+
+    Ok(())
 }
 
 pub fn init(conn: &Connection) -> Result<()> {
@@ -197,5 +226,44 @@ mod tests {
             )
             .unwrap();
         assert_eq!(migrated_item, (1, None));
+    }
+
+    #[test]
+    fn seeds_initial_user_once_without_overwriting_existing_credentials() {
+        let conn = Connection::open_in_memory().unwrap();
+        init(&conn).unwrap();
+
+        let password_hash = bcrypt::hash("senha-segura", bcrypt::DEFAULT_COST).unwrap();
+        seed_user_with_hash(&conn, "admin@coopvale.com", &password_hash).unwrap();
+        seed_user_with_hash(&conn, "admin@coopvale.com", "hash diferente").unwrap();
+
+        assert!(
+            crate::user::service::authenticate(&conn, "admin@coopvale.com", "senha-segura")
+                .unwrap()
+                .is_some()
+        );
+        assert!(
+            crate::user::service::authenticate(&conn, "admin@coopvale.com", "outra-senha")
+                .unwrap()
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn seeds_compiled_admin_when_build_credentials_are_configured() {
+        let Some((email, password_hash)) = compiled_admin::INITIAL_ADMIN else {
+            return;
+        };
+        let conn = Connection::open_in_memory().unwrap();
+        init(&conn).unwrap();
+
+        seed_compiled_admin(&conn).unwrap();
+        let user = crate::user::repository::find_by_email(&conn, email)
+            .unwrap()
+            .unwrap();
+        let password = std::env::var("COOPVALE_ADMIN_PASSWORD").unwrap();
+
+        assert_eq!(user.password, password_hash);
+        assert!(user.verify_password(&password));
     }
 }
