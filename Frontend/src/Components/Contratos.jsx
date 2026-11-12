@@ -177,7 +177,11 @@ function Contratos({ onNavigate }) {
             <span className="nav-icon">📑</span>
             <span>Contratos / Chamadas</span>
           </button>
-          <button type="button" className="nav-item">
+          <button
+            type="button"
+            className="nav-item"
+            onClick={() => onNavigate && onNavigate("financeiro")}
+          >
             <span className="nav-icon">💲</span>
             <span>Financeiro</span>
           </button>

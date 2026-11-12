@@ -235,6 +235,23 @@ input {
   margin: -3px 0 20px;
 }
 
+.account-toggle {
+  display: block;
+  margin: 18px auto 0;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--green-dark);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.account-toggle:disabled {
+  cursor: wait;
+  opacity: .6;
+}
+
 .submit-button,
 .offline-button {
   width: 100%;

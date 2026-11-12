@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import "../Styles/login.css";
 import { useAuth } from "../context/AuthContext"; // Importação do contexto
 import iconCoopVale from "../public/img/iconCoopVale.png";
@@ -6,8 +7,11 @@ import iconCoopVale from "../public/img/iconCoopVale.png";
 function Login({ onLoginSuccess }) {
   const { login } = useAuth(); // Hook de autenticação
   const [showPassword, setShowPassword] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [name, setName] = useState("");
   const [user, setUser] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -23,9 +27,29 @@ function Login({ onLoginSuccess }) {
     setIsSubmitting(true);
 
     try {
-      // Chama o login do Rust via contexto
-      await login(user, password);
-      
+      if (isRegistering) {
+        if (!name.trim()) {
+          setMessage("Informe seu nome.");
+          return;
+        }
+        if (password.length < 6) {
+          setMessage("A senha deve ter pelo menos 6 caracteres.");
+          return;
+        }
+        if (password !== passwordConfirmation) {
+          setMessage("As senhas não conferem.");
+          return;
+        }
+
+        await invoke("register_user", {
+          name: name.trim(),
+          email: user.trim(),
+          password,
+        });
+      }
+
+      await login(user.trim(), password);
+
       if (onLoginSuccess) {
         onLoginSuccess();
       }
@@ -89,17 +113,37 @@ function Login({ onLoginSuccess }) {
         />
 
         <div className="login-card">
-          <h2>Acesse sua conta</h2>
-          <p className="subtitle">Informe suas credenciais para prosseguir</p>
+          <h2>{isRegistering ? "Criar conta" : "Acesse sua conta"}</h2>
+          <p className="subtitle">
+            {isRegistering
+              ? "Cadastre seus dados para acessar o CoopVale"
+              : "Informe suas credenciais para prosseguir"}
+          </p>
 
           <form onSubmit={handleSubmit}>
-            <label htmlFor="user">E-mail ou usuário</label>
+            {isRegistering && (
+              <>
+                <label htmlFor="name">Nome</label>
+                <input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  autoComplete="name"
+                  required
+                  disabled={isSubmitting}
+                />
+              </>
+            )}
+
+            <label htmlFor="user">E-mail</label>
             <input
               id="user"
-              type="text"
+              type="email"
               value={user}
               onChange={(event) => setUser(event.target.value)}
-              autoComplete="username"
+              autoComplete="email"
+              required
               disabled={isSubmitting}
             />
 
@@ -111,7 +155,9 @@ function Login({ onLoginSuccess }) {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                autoComplete="current-password"
+                autoComplete={isRegistering ? "new-password" : "current-password"}
+                minLength={isRegistering ? 6 : undefined}
+                required
                 disabled={isSubmitting}
               />
 
@@ -125,20 +171,56 @@ function Login({ onLoginSuccess }) {
               </button>
             </div>
 
-            <button
-              type="button"
-              className="forgot"
-              onClick={() =>
-                setMessage("A recuperação de senha será disponibilizada nesta etapa.")
-              }
-            >
-              Esqueceu minha senha
-            </button>
+            {isRegistering ? (
+              <>
+                <label htmlFor="password-confirmation">Confirme a senha</label>
+                <input
+                  id="password-confirmation"
+                  type={showPassword ? "text" : "password"}
+                  value={passwordConfirmation}
+                  onChange={(event) => setPasswordConfirmation(event.target.value)}
+                  autoComplete="new-password"
+                  minLength={6}
+                  required
+                  disabled={isSubmitting}
+                />
+              </>
+            ) : (
+              <button
+                type="button"
+                className="forgot"
+                onClick={() =>
+                  setMessage("A recuperação de senha será disponibilizada nesta etapa.")
+                }
+              >
+                Esqueceu minha senha
+              </button>
+            )}
 
             <button type="submit" className="submit-button" disabled={isSubmitting}>
-              {isSubmitting ? "Entrando..." : "Entrar"}
+              {isSubmitting
+                ? isRegistering
+                  ? "Criando conta..."
+                  : "Entrando..."
+                : isRegistering
+                  ? "Criar conta e entrar"
+                  : "Entrar"}
             </button>
           </form>
+
+          <button
+            type="button"
+            className="account-toggle"
+            disabled={isSubmitting}
+            onClick={() => {
+              setIsRegistering((current) => !current);
+              setMessage("");
+              setPassword("");
+              setPasswordConfirmation("");
+            }}
+          >
+            {isRegistering ? "Já tenho uma conta. Entrar" : "Criar uma conta"}
+          </button>
 
           <div className="divider"><span>ou</span></div>
 
