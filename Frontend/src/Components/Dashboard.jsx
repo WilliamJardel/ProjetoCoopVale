@@ -1,10 +1,51 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import "../Styles/Dashboard.css";
 import { useAuth } from "../context/AuthContext";
 import iconCoopVale from "../public/img/iconCoopVale.png";
 
 function Dashboard({ onNavigate }) {
   const { session, logout } = useAuth();
+  const [financialSummary, setFinancialSummary] = useState({
+    contracted: 0,
+    received: 0,
+    remaining: 0,
+  });
+  const [financialError, setFinancialError] = useState("");
+
+  useEffect(() => {
+    async function loadFinancialSummary() {
+      try {
+        const [contracts, payments] = await Promise.all([
+          invoke("list_contracts"),
+          invoke("list_payments"),
+        ]);
+        const contracted = contracts.reduce(
+          (total, contract) => total + contract.total_value_cents,
+          0,
+        );
+        const received = payments.reduce(
+          (total, payment) => total + payment.amount_cents,
+          0,
+        );
+        setFinancialSummary({
+          contracted,
+          received,
+          remaining: contracted - received,
+        });
+      } catch (err) {
+        console.error("Erro ao carregar resumo financeiro:", err);
+        setFinancialError(`Não foi possível carregar o resumo financeiro: ${err}`);
+      }
+    }
+    loadFinancialSummary();
+  }, []);
+
+  const formatCurrency = (cents) =>
+    (cents / 100).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
 
   const deliveries = [
     {
@@ -71,7 +112,11 @@ function Dashboard({ onNavigate }) {
             <span className="nav-icon">📑</span>
             <span>Contratos / Chamadas</span>
           </button>
-          <button type="button" className="nav-item">
+          <button
+            type="button"
+            className="nav-item"
+            onClick={() => onNavigate && onNavigate("financeiro")}
+          >
             <span className="nav-icon">💲</span>
             <span>Financeiro</span>
           </button>
@@ -167,7 +212,9 @@ function Dashboard({ onNavigate }) {
                 <span className="metric-icon">💲</span>
               </div>
               <span className="metric-title">A receber</span>
-              <div className="metric-value">R$ 2.700,00</div>
+              <div className="metric-value">
+                {formatCurrency(financialSummary.remaining)}
+              </div>
               <span className="metric-subtext">Total pendente</span>
             </div>
 
@@ -252,29 +299,45 @@ function Dashboard({ onNavigate }) {
             {/* Resumo Financeiro */}
             <div className="panel-card">
               <div className="panel-header space-between">
-                <h2>Resumo financeiro (mês)</h2>
-                <a href="#financeiro" className="link-details">
+                <h2>Resumo financeiro</h2>
+                <button
+                  type="button"
+                  className="link-details"
+                  onClick={() => onNavigate && onNavigate("financeiro")}
+                  style={{ background: "none", border: "none", cursor: "pointer" }}
+                >
                   Ver detalhes
-                </a>
+                </button>
               </div>
 
+              {financialError && (
+                <p role="alert" style={{ color: "#9f2424", padding: "0 20px" }}>
+                  {financialError}
+                </p>
+              )}
               <div className="financial-content">
                 <div className="financial-stats">
                   <div className="stat-group">
                     <span className="stat-label">Valor contratado</span>
-                    <span className="stat-value">R$ 15.850,00</span>
+                    <span className="stat-value">
+                      {formatCurrency(financialSummary.contracted)}
+                    </span>
                   </div>
                   <div className="stat-group">
                     <span className="stat-label">Valor entregue</span>
-                    <span className="stat-value">R$ 13.200,00</span>
+                    <span className="stat-value">—</span>
                   </div>
                   <div className="stat-group">
                     <span className="stat-label">Valor recebido</span>
-                    <span className="stat-value">R$ 10.500,00</span>
+                    <span className="stat-value">
+                      {formatCurrency(financialSummary.received)}
+                    </span>
                   </div>
                   <div className="stat-group">
                     <span className="stat-label">A receber</span>
-                    <span className="stat-value highlight">R$ 2.700,00</span>
+                    <span className="stat-value highlight">
+                      {formatCurrency(financialSummary.remaining)}
+                    </span>
                   </div>
                 </div>
 
@@ -290,7 +353,16 @@ function Dashboard({ onNavigate }) {
                     />
                     <path
                       className="circle-val"
-                      strokeDasharray="80, 100"
+                      strokeDasharray={`${
+                        financialSummary.contracted > 0
+                          ? Math.min(
+                              100,
+                              (financialSummary.received /
+                                financialSummary.contracted) *
+                                100,
+                            )
+                          : 0
+                      }, 100`}
                       d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                       fill="none"
                       stroke="#008a43"
@@ -301,12 +373,16 @@ function Dashboard({ onNavigate }) {
                     <div className="legend-item">
                       <span className="dot dot-green"></span>
                       <span>Recebido</span>
-                      <span className="legend-val">R$ 10.500,00</span>
+                      <span className="legend-val">
+                        {formatCurrency(financialSummary.received)}
+                      </span>
                     </div>
                     <div className="legend-item">
                       <span className="dot dot-yellow"></span>
                       <span>A receber</span>
-                      <span className="legend-val">R$ 2.700,00</span>
+                      <span className="legend-val">
+                        {formatCurrency(financialSummary.remaining)}
+                      </span>
                     </div>
                   </div>
                 </div>

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import Login from "./Components/login";
 import Dashboard from "./Components/Dashboard";
 import Contratos from "./Components/Contratos";
+import Financeiro from "./Components/Financeiro";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
 function MainContent() {
@@ -37,6 +38,8 @@ function MainContent() {
   switch (currentScreen) {
     case "contratos":
       return <Contratos onNavigate={setCurrentScreen} />;
+    case "financeiro":
+      return <Financeiro onNavigate={setCurrentScreen} />;
     case "dashboard":
     default:
       return <Dashboard onNavigate={setCurrentScreen} />;
