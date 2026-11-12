@@ -50,11 +50,95 @@ fn create_tables(conn: &Connection) -> Result<()> {
         [],
     )?;
     conn.execute(
+        "CREATE TABLE IF NOT EXISTS produto (
+            id                           INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome                         TEXT NOT NULL,
+            unidade_de_medida            TEXT NOT NULL,
+            categoria                    TEXT NOT NULL,
+            preco_de_referencia_centavos INTEGER NOT NULL CHECK (preco_de_referencia_centavos > 0),
+            status                       TEXT NOT NULL DEFAULT 'Ativo'
+                                        CHECK (status IN ('Ativo', 'Desativado'))
+        )",
+        [],
+    )?;
+    conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_contrato_instituicao ON contrato(instituicao_id)",
         [],
     )?;
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_contrato_status_termino ON contrato(status, data_termino)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_produto_status ON produto(status)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS item_contrato (
+            id                         INTEGER PRIMARY KEY AUTOINCREMENT,
+            contrato_id                INTEGER NOT NULL
+                                       REFERENCES contrato(id) ON DELETE RESTRICT,
+            produto_id                 INTEGER NOT NULL
+                                       REFERENCES produto(id) ON DELETE RESTRICT,
+            quantidade                 INTEGER NOT NULL CHECK (quantidade > 0),
+            quantidade_entregue        INTEGER NOT NULL DEFAULT 0
+                                       CHECK (quantidade_entregue >= 0 AND quantidade_entregue <= quantidade),
+            preco_unitario_centavos    INTEGER NOT NULL CHECK (preco_unitario_centavos > 0)
+        )",
+        [],
+    )?;
+    let has_contract_id = {
+        let mut stmt = conn.prepare("PRAGMA table_info(item_contrato)")?;
+        let columns = stmt.query_map([], |row| row.get::<_, String>(1))?;
+        columns
+            .collect::<Result<Vec<_>>>()?
+            .iter()
+            .any(|column| column == "contrato_id")
+    };
+    if !has_contract_id {
+        conn.execute(
+            "ALTER TABLE item_contrato ADD COLUMN contrato_id INTEGER REFERENCES contrato(id) ON DELETE RESTRICT",
+            [],
+        )?;
+    }
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_item_contrato_produto ON item_contrato(produto_id)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_item_por_contrato ON item_contrato(contrato_id)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS entrega (
+            id                     INTEGER PRIMARY KEY AUTOINCREMENT,
+            item_contrato_id       INTEGER NOT NULL
+                                   REFERENCES item_contrato(id) ON DELETE RESTRICT,
+            quantidade_solicitada INTEGER NOT NULL CHECK (quantidade_solicitada > 0),
+            quantidade_entregue   INTEGER NOT NULL
+                                   CHECK (quantidade_entregue > 0 AND quantidade_entregue <= quantidade_solicitada),
+            data_entrega           TEXT NOT NULL,
+            observacao             TEXT NOT NULL DEFAULT ''
+        )",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_entrega_por_item ON entrega(item_contrato_id)",
+        [],
+    )?;
+        conn.execute(
+        "CREATE TABLE IF NOT EXISTS pagamento (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            contrato_id     INTEGER NOT NULL
+                            REFERENCES contrato(id) ON DELETE RESTRICT,
+            valor_centavos  INTEGER NOT NULL CHECK (valor_centavos > 0),
+            data_pagamento  TEXT NOT NULL,
+            observacao      TEXT NOT NULL DEFAULT ''
+        )",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_pagamento_por_contrato ON pagamento(contrato_id)",
         [],
     )?;
     Ok(())
@@ -80,4 +164,38 @@ pub fn error_message(e: Error) -> String {
         }
     }
     e.to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn migrates_existing_contract_items_without_losing_rows() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch(
+            "CREATE TABLE produto (id INTEGER PRIMARY KEY, status TEXT NOT NULL);
+             INSERT INTO produto (id, status) VALUES (1, 'Ativo');
+             CREATE TABLE item_contrato (
+                 id INTEGER PRIMARY KEY,
+                 produto_id INTEGER NOT NULL REFERENCES produto(id),
+                 quantidade INTEGER NOT NULL,
+                 quantidade_entregue INTEGER NOT NULL,
+                 preco_unitario_centavos INTEGER NOT NULL
+             );
+             INSERT INTO item_contrato VALUES (1, 1, 10, 2, 500);",
+        )
+        .unwrap();
+
+        init(&conn).unwrap();
+
+        let migrated_item: (i32, Option<i32>) = conn
+            .query_row(
+                "SELECT id, contrato_id FROM item_contrato WHERE id = 1",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(migrated_item, (1, None));
+    }
 }
