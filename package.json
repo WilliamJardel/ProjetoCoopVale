@@ -15,12 +15,13 @@
   "type": "commonjs",
   "scripts": {
     "build": "webpack --mode production",
-    "build:desktop": "npm --prefix backend/CoopVale run tauri -- build",
-    "start": "npm --prefix backend/CoopVale run tauri -- dev",
+    "build:desktop": "tauri build",
+    "start": "tauri dev",
+    "tauri": "tauri",
     "dev": "webpack serve --mode development"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.12.1",
+    "@tauri-apps/api": "^2.12.4",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
@@ -28,6 +29,7 @@
     "@babel/core": "^7.28.4",
     "@babel/preset-env": "^7.28.3",
     "@babel/preset-react": "^7.27.1",
+    "@tauri-apps/cli": "^2.12.4",
     "babel-loader": "^10.0.0",
     "css-loader": "^7.1.2",
     "html-webpack-plugin": "^5.6.4",
