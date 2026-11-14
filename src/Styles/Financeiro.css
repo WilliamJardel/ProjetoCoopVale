@@ -1,0 +1,252 @@
+.finance-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 28px 32px;
+  color: #2d332a;
+}
+
+.finance-header,
+.finance-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.finance-header h1,
+.finance-panel-header h2 {
+  margin: 0;
+  color: #2b3823;
+}
+
+.finance-header h1 {
+  font-size: 30px;
+}
+
+.finance-header p,
+.finance-panel-header p {
+  margin: 5px 0 0;
+  color: #71776d;
+}
+
+.finance-user {
+  color: #55604e;
+  font-weight: 600;
+}
+
+.finance-message {
+  padding: 12px 16px;
+  border: 1px solid;
+  border-radius: 8px;
+}
+
+.finance-message.error {
+  color: #9f2424;
+  background: #fff3f3;
+  border-color: #efb6b6;
+}
+
+.finance-message.success {
+  color: #2f6d2f;
+  background: #f0f8ed;
+  border-color: #b7d8aa;
+}
+
+.finance-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.finance-summary-card,
+.finance-panel {
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #ebebe3;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.finance-summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 3px solid #588e38;
+}
+
+.finance-summary-card span {
+  color: #71776d;
+  font-size: 14px;
+}
+
+.finance-summary-card strong {
+  color: #2b3823;
+  font-size: 22px;
+}
+
+.finance-panel-header {
+  margin-bottom: 18px;
+}
+
+.finance-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.finance-form label,
+.finance-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #46513e;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.finance-form input,
+.finance-form select,
+.finance-filter select {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  color: #30382c;
+  background: #fff;
+  border: 1px solid #cfd6c9;
+  border-radius: 7px;
+  font: inherit;
+}
+
+.finance-note-field {
+  grid-column: span 2;
+}
+
+.finance-form-actions {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.finance-primary-button,
+.finance-secondary-button,
+.finance-row-actions button {
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 0;
+  border-radius: 7px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.finance-primary-button {
+  color: white;
+  background: #4b6b18;
+}
+
+.finance-primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.finance-secondary-button {
+  color: #384533;
+  background: #f1f3ed;
+  border: 1px solid #c8d1c0;
+}
+
+.finance-empty {
+  margin: 16px 0 0;
+  color: #71776d;
+}
+
+.finance-payments-header {
+  align-items: flex-end;
+}
+
+.finance-filter {
+  min-width: 220px;
+}
+
+.finance-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.finance-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.finance-table th,
+.finance-table td {
+  padding: 13px 12px;
+  border-bottom: 1px solid #ecefe9;
+}
+
+.finance-table th {
+  color: #626b5b;
+  background: #f8f9f6;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.finance-table td {
+  color: #3c4536;
+  font-size: 14px;
+}
+
+.finance-table-empty {
+  padding: 28px !important;
+  color: #71776d !important;
+  text-align: center;
+}
+
+.finance-row-actions {
+  white-space: nowrap;
+}
+
+.finance-row-actions button {
+  min-height: 32px;
+  margin-right: 6px;
+  padding: 6px 10px;
+  color: #36531e;
+  background: #edf4e8;
+}
+
+.finance-row-actions button.delete {
+  color: #9f2424;
+  background: #fff0f0;
+}
+
+@media (max-width: 900px) {
+  .finance-content {
+    padding: 22px 18px;
+  }
+
+  .finance-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .finance-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-form {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-note-field {
+    grid-column: auto;
+  }
+
+  .finance-form-actions,
+  .finance-payments-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
