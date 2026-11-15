@@ -1,6 +1,6 @@
 use crate::db::error_message;
-use crate::Product::model::{Product, ProductData, Status};
-use crate::Product::repository;
+use crate::product::model::{Product, ProductData, Status};
+use crate::product::repository;
 use rusqlite::Connection;
 
 fn validate(data: &ProductData) -> Result<(), String> {
