@@ -1,9 +1,30 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import "../Styles/Contratos.css";
 import { useAuth } from "../context/AuthContext";
-import CadastrarInstituicao from "./CadastrarInstituicao";
 import iconCoopVale from "../public/img/iconCoopVale.png";
+import {
+  formatCurrencyInput,
+  parseCurrencyInput,
+} from "../utils/inputFormatters";
+
+const emptyForm = {
+  contractNumber: "",
+  institution_id: "",
+  start_date: "",
+  end_date: "",
+  total_value: "",
+  observations: "",
+};
+
+const isNearExpiration = (contract) => {
+  if (contract.status === "Concluido") return false;
+  const [year, month, day] = contract.end_date.split("-").map(Number);
+  const endDate = new Date(year, month - 1, day);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return (endDate - today) / (1000 * 60 * 60 * 24) <= 30;
+};
 
 function Contratos({ onNavigate }) {
   const [institutions, setInstitutions] = useState([]);
@@ -12,6 +33,7 @@ function Contratos({ onNavigate }) {
 
   // Estado para controlar a visualização: 'list' (Listagem) ou 'create' (Formulário)
   const [viewMode, setViewMode] = useState("list");
+  const [editingContractId, setEditingContractId] = useState(null);
 
   // Estados da Listagem
   const [contracts, setContracts] = useState([]);
@@ -22,14 +44,7 @@ function Contratos({ onNavigate }) {
   const [periodFilter, setPeriodFilter] = useState("");
 
   // Estados do Formulário de Cadastro (conectados aos campos exigidos pelo backend)
-  const [formData, setFormData] = useState({
-    contractNumber: "",
-    institution_id: "",
-    start_date: "",
-    end_date: "",
-    total_value: "",
-    observations: "",
-  });
+  const [formData, setFormData] = useState(emptyForm);
 
   // Lista dinâmica de produtos dentro do formulário de cadastro
   const [productsList, setProductsList] = useState([
@@ -68,7 +83,10 @@ function Contratos({ onNavigate }) {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === "total_value" ? formatCurrencyInput(value) : value,
+    }));
   };
 
   const handleRemoveProduct = (id) => {
@@ -89,29 +107,130 @@ function Contratos({ onNavigate }) {
   const handleSaveContract = async (e) => {
     e.preventDefault();
     try {
-      // Converte o valor em Reais digitado para centavos (conforme esperado pelo backend Rust)
-      const cents = Math.round(parseFloat(formData.total_value || "0") * 100);
+      const totalValue = parseCurrencyInput(formData.total_value);
+      const institutionId = Number(formData.institution_id);
+      if (!Number.isFinite(totalValue) || totalValue <= 0) {
+        throw new Error("Informe um valor de contrato maior que zero.");
+      }
+      if (!Number.isInteger(institutionId) || institutionId <= 0) {
+        throw new Error("Selecione a instituição contratante.");
+      }
+      if (!formData.start_date || !formData.end_date) {
+        throw new Error("Informe as datas de início e término do contrato.");
+      }
+      if (formData.end_date <= formData.start_date) {
+        throw new Error("A data de término deve ser posterior à data de início.");
+      }
 
       const payload = {
-        institution_id: parseInt(formData.institution_id || "1", 10),
-        total_value_cents: cents,
+        institution_id: institutionId,
+        total_value_cents: Math.round(totalValue * 100),
         start_date: formData.start_date,
         end_date: formData.end_date,
       };
 
-      await invoke("create_contract", { data: payload });
-      alert("Contrato cadastrado com sucesso!");
-      fetchContracts();
+      if (editingContractId === null) {
+        await invoke("create_contract", { data: payload });
+        alert("Contrato cadastrado com sucesso!");
+      } else {
+        await invoke("update_contract", { id: editingContractId, data: payload });
+        alert("Contrato atualizado com sucesso!");
+      }
+      await fetchContracts();
+      setFormData(emptyForm);
+      setEditingContractId(null);
       setViewMode("list");
     } catch (err) {
       console.error("Erro ao salvar contrato:", err);
-      alert("Erro ao salvar contrato: " + err);
+      alert("Erro ao salvar contrato: " + (err?.message || err));
     }
   };
 
+  const handleCreateContract = () => {
+    setFormData(emptyForm);
+    setEditingContractId(null);
+    setViewMode("create");
+  };
+
+  const handleEditContract = (contract) => {
+    if (contract.status === "Concluido") {
+      alert("Contratos concluídos não podem ser editados.");
+      return;
+    }
+
+    setFormData({
+      ...emptyForm,
+      contractNumber: `CP ${String(contract.id).padStart(2, "0")}/2026`,
+      institution_id: String(contract.institution_id),
+      start_date: contract.start_date,
+      end_date: contract.end_date,
+      total_value: formatCurrencyInput(String(contract.total_value_cents)),
+    });
+    setEditingContractId(contract.id);
+    setViewMode("create");
+  };
+
+  const filteredContracts = useMemo(() => {
+    const query = searchTerm.trim().toLocaleLowerCase("pt-BR");
+    const year = periodFilter ? Number(periodFilter) : null;
+
+    return contracts.filter((contract) => {
+      const institution = institutions.find(
+        (item) => item.id === contract.institution_id,
+      );
+      const searchableText = [
+        `CP ${String(contract.id).padStart(2, "0")}/2026`,
+        String(contract.id),
+        institution?.name || `Instituição #${contract.institution_id}`,
+      ]
+        .join(" ")
+        .toLocaleLowerCase("pt-BR");
+
+      const matchesSearch = !query || searchableText.includes(query);
+      const matchesStatus =
+        !statusFilter ||
+        (statusFilter === "QuaseFinalizando"
+          ? contract.status === "QuaseFinalizando" || isNearExpiration(contract)
+          : contract.status === statusFilter);
+      const matchesInstitution =
+        !institutionFilter ||
+        contract.institution_id === Number(institutionFilter);
+      const matchesPeriod =
+        year === null ||
+        (Number(contract.start_date.slice(0, 4)) <= year &&
+          Number(contract.end_date.slice(0, 4)) >= year);
+
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesInstitution &&
+        matchesPeriod
+      );
+    });
+  }, [
+    contracts,
+    institutions,
+    searchTerm,
+    statusFilter,
+    institutionFilter,
+    periodFilter,
+  ]);
+
+  const contractYears = useMemo(() => {
+    const years = new Set();
+    contracts.forEach((contract) => {
+      const startYear = Number(contract.start_date.slice(0, 4));
+      const endYear = Number(contract.end_date.slice(0, 4));
+      for (let year = startYear; year <= endYear; year += 1) {
+        years.add(year);
+      }
+    });
+    return [...years].sort((a, b) => a - b);
+  }, [contracts]);
+
   // Formatação para exibição no resumo à direita
   const formattedValue = () => {
-    const val = parseFloat(formData.total_value || "0");
+    const val = parseCurrencyInput(formData.total_value);
     return val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   };
 
@@ -185,6 +304,14 @@ function Contratos({ onNavigate }) {
             <span className="nav-icon">💲</span>
             <span>Financeiro</span>
           </button>
+          <button
+            type="button"
+            className="nav-item"
+            onClick={() => onNavigate && onNavigate("instituicoes")}
+          >
+            <span className="nav-icon">🏢</span>
+            <span>Instituições</span>
+          </button>
           <button type="button" className="nav-item">
             <span className="nav-icon">🧾</span>
             <span>Notas Fiscais</span>
@@ -243,7 +370,7 @@ function Contratos({ onNavigate }) {
                 <button
                   type="button"
                   className="btn-add-contract"
-                  onClick={() => setViewMode("create")}
+                  onClick={handleCreateContract}
                 >
                   <span className="plus-icon">+</span> Cadastrar contratos
                 </button>
@@ -308,7 +435,6 @@ function Contratos({ onNavigate }) {
                 <option value="">Status</option>
                 <option value="EmAndamento">Ativo</option>
                 <option value="QuaseFinalizando">Próx. do limite</option>
-                <option value="Encerrando">Encerrando</option>
                 <option value="Concluido">Finalizado</option>
               </select>
 
@@ -318,6 +444,11 @@ function Contratos({ onNavigate }) {
                 onChange={(e) => setInstitutionFilter(e.target.value)}
               >
                 <option value="">Instituição</option>
+                {institutions.map((institution) => (
+                  <option key={institution.id} value={institution.id}>
+                    {institution.name}
+                  </option>
+                ))}
               </select>
 
               <select
@@ -326,6 +457,11 @@ function Contratos({ onNavigate }) {
                 onChange={(e) => setPeriodFilter(e.target.value)}
               >
                 <option value="">Período</option>
+                {contractYears.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
               </select>
             </section>
 
@@ -356,13 +492,17 @@ function Contratos({ onNavigate }) {
                           Carregando contratos...
                         </td>
                       </tr>
-                    ) : contracts.length > 0 ? (
-                      contracts.map((item) => (
+                    ) : filteredContracts.length > 0 ? (
+                      filteredContracts.map((item) => (
                         <tr key={item.id}>
                           <td className="font-bold">{`CP ${String(
                             item.id
                           ).padStart(2, "0")}/2026`}</td>
-                          <td>{`Instituição #${item.institution_id}`}</td>
+                          <td>
+                            {institutions.find(
+                              (institution) => institution.id === item.institution_id,
+                            )?.name || `Instituição #${item.institution_id}`}
+                          </td>
                           <td>{formatCurrency(item.total_value_cents)}</td>
                           <td>{`${formatDate(item.start_date)} - ${formatDate(
                             item.end_date
@@ -381,6 +521,8 @@ function Contratos({ onNavigate }) {
                               type="button"
                               className="action-btn"
                               title="Editar"
+                              onClick={() => handleEditContract(item)}
+                              disabled={item.status === "Concluido"}
                             >
                               ✏️
                             </button>
@@ -390,7 +532,9 @@ function Contratos({ onNavigate }) {
                     ) : (
                       <tr>
                         <td colSpan="7" className="empty-state-cell">
-                          Nenhum contrato cadastrado no momento.
+                          {contracts.length
+                            ? "Nenhum contrato corresponde aos filtros selecionados."
+                            : "Nenhum contrato cadastrado no momento."}
                         </td>
                       </tr>
                     )}
@@ -400,7 +544,7 @@ function Contratos({ onNavigate }) {
 
               <div className="table-pagination-bar">
                 <span className="pagination-info">
-                  Mostrando {contracts.length} contratos
+                  Mostrando {filteredContracts.length} de {contracts.length} contratos
                 </span>
                 <div className="pagination-controls">
                   <button type="button" className="page-btn active">
@@ -424,11 +568,15 @@ function Contratos({ onNavigate }) {
                 <button
                   type="button"
                   className="btn-back"
-                  onClick={() => setViewMode("list")}
+                  onClick={() => {
+                    setFormData(emptyForm);
+                    setEditingContractId(null);
+                    setViewMode("list");
+                  }}
                 >
                   ← Contratos / Chamadas
                 </button>
-                <h1>Cadastrar contratos</h1>
+                <h1>{editingContractId === null ? "Cadastrar contratos" : "Editar contrato"}</h1>
                 <p>Gerencie os Contratos e Chamadas da Cooperativa</p>
               </div>
 
@@ -458,7 +606,11 @@ function Contratos({ onNavigate }) {
                   <button
                     type="button"
                     className="btn-cancel"
-                    onClick={() => setViewMode("list")}
+                    onClick={() => {
+                      setFormData(emptyForm);
+                      setEditingContractId(null);
+                      setViewMode("list");
+                    }}
                   >
                     Cancelar
                   </button>
@@ -467,7 +619,7 @@ function Contratos({ onNavigate }) {
                     className="btn-save-contract"
                     onClick={handleSaveContract}
                   >
-                    💾 Salvar contrato
+                    💾 {editingContractId === null ? "Salvar contrato" : "Salvar alterações"}
                   </button>
                 </div>
               </div>
@@ -498,6 +650,7 @@ function Contratos({ onNavigate }) {
                     <label>Instituição / Órgão</label>
                     <select
                       name="institution_id"
+                      required
                       value={formData.institution_id}
                       onChange={handleInputChange}
                     >
@@ -517,6 +670,7 @@ function Contratos({ onNavigate }) {
                       <input
                         type="date"
                         name="start_date"
+                        required
                         value={formData.start_date}
                         onChange={handleInputChange}
                       />
@@ -528,8 +682,9 @@ function Contratos({ onNavigate }) {
                     <div className="input-currency-group">
                       <span className="currency-prefix">R$</span>
                       <input
-                        type="number"
-                        step="0.01"
+                        type="text"
+                        inputMode="decimal"
+                        required
                         name="total_value"
                         placeholder="Ex: 15.850,00"
                         value={formData.total_value}
@@ -545,6 +700,7 @@ function Contratos({ onNavigate }) {
                       <input
                         type="date"
                         name="end_date"
+                        required
                         value={formData.end_date}
                         onChange={handleInputChange}
                       />

@@ -4,6 +4,10 @@ import { useAuth } from "../context/AuthContext";
 import iconCoopVale from "../public/img/iconCoopVale.png";
 import "../Styles/Dashboard.css";
 import "../Styles/Financeiro.css";
+import {
+  formatCurrencyInput,
+  parseCurrencyInput,
+} from "../utils/inputFormatters";
 
 const emptyForm = {
   contract_id: "",
@@ -110,7 +114,7 @@ function Financeiro({ onNavigate }) {
     setError("");
     setSuccess("");
 
-    const amount = Number(form.amount);
+    const amount = parseCurrencyInput(form.amount);
     if (!Number.isFinite(amount) || amount <= 0) {
       setError("Informe um valor de pagamento maior que zero.");
       return;
@@ -152,7 +156,7 @@ function Financeiro({ onNavigate }) {
     setEditingPaymentId(payment.id);
     setForm({
       contract_id: String(payment.contract_id),
-      amount: (payment.amount_cents / 100).toFixed(2),
+      amount: formatCurrencyInput(String(payment.amount_cents)),
       payment_date: payment.payment_date,
       note: payment.note,
     });
@@ -189,6 +193,9 @@ function Financeiro({ onNavigate }) {
           </button>
           <button type="button" className="nav-item active" onClick={() => onNavigate("financeiro")}>
             <span className="nav-icon">💲</span><span>Financeiro</span>
+          </button>
+          <button type="button" className="nav-item" onClick={() => onNavigate("instituicoes")}>
+            <span className="nav-icon">🏢</span><span>Instituições</span>
           </button>
         </nav>
       </aside>
@@ -247,12 +254,14 @@ function Financeiro({ onNavigate }) {
               <label>
                 Valor (R$)
                 <input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
                   required
                   value={form.amount}
-                  onChange={(event) => setForm((current) => ({ ...current, amount: event.target.value }))}
+                  onChange={(event) => setForm((current) => ({
+                    ...current,
+                    amount: formatCurrencyInput(event.target.value),
+                  }))}
                   placeholder="0,00"
                 />
               </label>
