@@ -1,0 +1,13 @@
+.relatorios-content {
+  min-width: 0;
+  width: 100%;
+}
+
+.relatorios-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.relatorios-table tbody tr:hover {
+  background-color: #f8faf5;
+}

@@ -4,6 +4,7 @@ import Dashboard from "./Components/Dashboard";
 import Contratos from "./Components/Contratos";
 import Financeiro from "./Components/Financeiro";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import Relatorios from "./Components/Relatorios";
 
 function MainContent() {
   const { session, loading } = useAuth();
@@ -40,6 +41,8 @@ function MainContent() {
       return <Contratos onNavigate={setCurrentScreen} />;
     case "financeiro":
       return <Financeiro onNavigate={setCurrentScreen} />;
+    case "relatorios":
+      return <Relatorios onNavigate={setCurrentScreen} />;
     case "dashboard":
     default:
       return <Dashboard onNavigate={setCurrentScreen} />;
