@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+import { menuIcons } from "./Icons";
 import {
   Home,
   FileText,
@@ -73,16 +74,16 @@ function Relatorios({ onNavigate }) {
   ];
 
   const menuItems = [
-    { nome: "Início", icone: Home, tela: "dashboard" },
-    { nome: "Contratos / Chamadas", icone: FileText, tela: "contratos" },
-    { nome: "Financeiro", icone: HandCoins, tela: "financeiro" },
-    { nome: "Notas Fiscais", icone: Receipt, tela: "notas-fiscais" },
-    { nome: "Relatórios", icone: ChartColumnIncreasing, tela: "relatorios" },
-    { nome: "Produtos", icone: Package, tela: "produtos" },
-    { nome: "Entregas", icone: Truck, tela: "entregas" },
-    { nome: "Avisos", icone: Bell, tela: "avisos" },
-    { nome: "Configurações", icone: Settings, tela: "configuracoes" },
-  ];
+    { nome: "Início", icone: menuIcons.dashboard, tela: "dashboard" },
+    { nome: "Contratos / Chamadas", icone: menuIcons.contratos, tela: "contratos" },
+    { nome: "Financeiro", icone: menuIcons.financeiro, tela: "financeiro" },
+    { nome: "Notas Fiscais", icone: menuIcons["notas-fiscais"], tela: "notas-fiscais" },
+    { nome: "Relatórios", icone: menuIcons.relatorios, tela: "relatorios" },
+    { nome: "Produtos", icone: menuIcons.produtos, tela: "produtos" },
+    { nome: "Entregas", icone: menuIcons.entregas, tela: "entregas" },
+    { nome: "Avisos", icone: menuIcons.avisos, tela: "avisos" },
+    { nome: "Configurações", icone: menuIcons.configuracoes, tela: "configuracoes" },
+];
 
   const relatoriosRecentes = [];
 

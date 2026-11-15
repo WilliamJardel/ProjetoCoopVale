@@ -120,7 +120,11 @@ function Dashboard({ onNavigate }) {
             <span className="nav-icon">💲</span>
             <span>Financeiro</span>
           </button>
-          <button type="button" className="nav-item">
+          <button
+            type="button"
+            className="nav-item"
+            onClick={() => onNavigate && onNavigate("notas-fiscais")}
+          >
             <span className="nav-icon">🧾</span>
             <span>Notas Fiscais</span>
           </button>
