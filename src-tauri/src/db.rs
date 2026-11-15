@@ -147,15 +147,33 @@ fn create_tables(conn: &Connection) -> Result<()> {
             quantidade_entregue   INTEGER NOT NULL
                                    CHECK (quantidade_entregue > 0 AND quantidade_entregue <= quantidade_solicitada),
             data_entrega           TEXT NOT NULL,
-            observacao             TEXT NOT NULL DEFAULT ''
+            observacao             TEXT NOT NULL DEFAULT '',
+            status                 TEXT NOT NULL DEFAULT 'Entregue'
+                       CHECK (status IN ('Pendente', 'Entregue'))
         )",
         [],
     )?;
+    let has_delivery_status = {
+        let mut stmt = conn.prepare("PRAGMA table_info(entrega)")?;
+        let columns = stmt.query_map([], |row| row.get::<_, String>(1))?;
+        columns
+            .collect::<Result<Vec<_>>>()?
+            .iter()
+            .any(|column| column == "status")
+    };
+    if !has_delivery_status {
+        conn.execute(
+            "ALTER TABLE entrega ADD COLUMN status TEXT NOT NULL DEFAULT 'Entregue'
+             CHECK (status IN ('Pendente', 'Entregue'))",
+            [],
+        )?;
+    }
+
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_entrega_por_item ON entrega(item_contrato_id)",
         [],
     )?;
-        conn.execute(
+    conn.execute(
         "CREATE TABLE IF NOT EXISTS pagamento (
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
             contrato_id     INTEGER NOT NULL

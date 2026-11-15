@@ -1,7 +1,7 @@
 use crate::auth::session::AuthState;
 use crate::db;
-use crate::Product::model::{Product, ProductData};
-use crate::Product::service;
+use crate::product::model::{Product, ProductData};
+use crate::product::service;
 use tauri::State;
 
 #[tauri::command]
