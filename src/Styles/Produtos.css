@@ -1,0 +1,161 @@
+/* Tela de Produtos — complementa Dashboard.css e Contratos.css */
+
+.products-feedback {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.products-feedback.success {
+  background: #e3f3cf;
+  color: #3b660a;
+  border: 1px solid #c5e89b;
+}
+
+.products-feedback.error {
+  background: #fde2dc;
+  color: #a1300a;
+  border: 1px solid #fcc2a5;
+}
+
+.action-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Modais */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(45, 51, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modal-card {
+  background: #ffffff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-card.modal-small {
+  max-width: 420px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #3a6322;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.modal-body {
+  padding: 20px 24px;
+}
+
+.modal-body p {
+  margin: 0;
+  color: #2d332a;
+  line-height: 1.5;
+}
+
+.modal-error {
+  margin: 0 24px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px 20px;
+}
+
+.btn-danger {
+  background: #c4400a;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-danger:hover {
+  background: #a1300a;
+}
+
+.btn-danger:disabled,
+.btn-save-contract:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Detalhes */
+.details-product-name {
+  margin: 0 0 16px;
+  font-size: 20px;
+  color: #2d332a;
+}
+
+.details-list {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 24px;
+}
+
+.details-list dt {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.details-list dd {
+  margin: 0;
+  font-size: 15px;
+  color: #2d332a;
+}
+
+.details-list > div:last-child {
+  grid-column: 1 / -1;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  background: #c5e89b;
+  color: #3b660a;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}

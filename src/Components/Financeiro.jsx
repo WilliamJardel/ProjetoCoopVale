@@ -190,6 +190,24 @@ function Financeiro({ onNavigate }) {
           <button type="button" className="nav-item active" onClick={() => onNavigate("financeiro")}>
             <span className="nav-icon">💲</span><span>Financeiro</span>
           </button>
+          <button type="button" className="nav-item">
+            <span className="nav-icon">🧾</span><span>Notas Fiscais</span>
+          </button>
+          <button type="button" className="nav-item">
+            <span className="nav-icon">📊</span><span>Relatórios</span>
+          </button>
+          <button type="button" className="nav-item" onClick={() => onNavigate("produtos")}>
+            <span className="nav-icon">📦</span><span>Produtos</span>
+          </button>
+          <button type="button" className="nav-item">
+            <span className="nav-icon">🚚</span><span>Entregas</span>
+          </button>
+          <button type="button" className="nav-item">
+            <span className="nav-icon">🔔</span><span>Avisos</span>
+          </button>
+          <button type="button" className="nav-item">
+            <span className="nav-icon">⚙️</span><span>Configurações</span>
+          </button>
         </nav>
       </aside>
 
