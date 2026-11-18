@@ -7,6 +7,10 @@ import iconCoopVale from "../public/img/iconCoopVale.png";
 
 function Contratos({ onNavigate }) {
   const [institutions, setInstitutions] = useState([]);
+  const [institutionPickerOpen, setInstitutionPickerOpen] = useState(false);
+  const [institutionSubView, setInstitutionSubView] = useState("select");
+  const [institutionSearch, setInstitutionSearch] = useState("");
+  const [pendingInstitutionId, setPendingInstitutionId] = useState("");
 
   const { session } = useAuth();
 
@@ -15,6 +19,9 @@ function Contratos({ onNavigate }) {
 
   // Estados da Listagem
   const [contracts, setContracts] = useState([]);
+  const [availableProducts, setAvailableProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState("");
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -32,17 +39,12 @@ function Contratos({ onNavigate }) {
   });
 
   // Lista dinâmica de produtos dentro do formulário de cadastro
-  const [productsList, setProductsList] = useState([
-    { id: 1, name: "Polpa de Fruta", flavor: "Goiaba", quantity: 200, unit: "1kg" },
-    { id: 2, name: "Polpa de Fruta", flavor: "Goiaba", quantity: 200, unit: "1kg" },
-    { id: 3, name: "Polpa de Fruta", flavor: "Goiaba", quantity: 200, unit: "1kg" },
-    { id: 4, name: "Polpa de Fruta", flavor: "Goiaba", quantity: 200, unit: "1kg" },
-    { id: 5, name: "Polpa de Fruta", flavor: "Goiaba", quantity: 200, unit: "1kg" },
-  ]);
+  const [productsList, setProductsList] = useState([]);
 
   useEffect(() => {
     fetchContracts();
     fetchInstitutions();
+    fetchAvailableProducts();
   }, []);
 
   const fetchContracts = async () => {
@@ -66,28 +68,76 @@ function Contratos({ onNavigate }) {
     }
   };
 
+  const fetchAvailableProducts = async () => {
+    setProductsLoading(true);
+    try {
+      const data = await invoke("list_products");
+      setAvailableProducts((data || []).filter((product) => product.status === "Ativo"));
+    } catch (err) {
+      console.error("Erro ao carregar produtos disponíveis:", err);
+      setAvailableProducts([]);
+    } finally {
+      setProductsLoading(false);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleRemoveProduct = (id) => {
-    setProductsList((prev) => prev.filter((item) => item.id !== id));
+  const openInstitutionPicker = () => {
+    setInstitutionSearch("");
+    setPendingInstitutionId(formData.institution_id || "");
+    setInstitutionSubView("select");
+    setInstitutionPickerOpen(true);
+  };
+
+  const selectInstitution = () => {
+    if (!pendingInstitutionId) return;
+    setFormData((previous) => ({ ...previous, institution_id: pendingInstitutionId }));
+    setInstitutionPickerOpen(false);
+  };
+
+  const handleInstitutionCreated = (institution) => {
+    setInstitutions((previous) => {
+      const id = institution.id;
+      if (previous.some((entry) => entry.id === id)) return previous;
+      return [...previous, institution];
+    });
+    setFormData((previous) => ({ ...previous, institution_id: String(institution.id) }));
+    setInstitutionPickerOpen(false);
+    setInstitutionSubView("select");
+  };
+
+  const filteredInstitutions = institutions.filter((institution) =>
+    `${institution.name} ${institution.cnpj}`.toLocaleLowerCase("pt-BR").includes(institutionSearch.trim().toLocaleLowerCase("pt-BR"))
+  );
+
+  const handleRemoveProduct = (rowId) => {
+    setProductsList((prev) => prev.filter((item) => item.rowId !== rowId));
   };
 
   const handleAddProduct = () => {
-    const newProd = {
-      id: Date.now(),
-      name: "Polpa de Fruta",
-      flavor: "Goiaba",
-      quantity: 200,
-      unit: "1kg",
-    };
-    setProductsList((prev) => [...prev, newProd]);
+    const product = availableProducts.find((item) => item.id === Number(selectedProductId));
+    if (!product || productsList.some((item) => item.product.id === product.id)) return;
+    setProductsList((prev) => [...prev, {
+      rowId: `${product.id}-${Date.now()}`,
+      product,
+      quantity: "1",
+      unit_price: (product.reference_price_cents / 100).toFixed(2),
+    }]);
+    setSelectedProductId("");
   };
 
   const handleSaveContract = async (e) => {
     e.preventDefault();
+    const invalidItem = productsList.find((item) => !Number.isInteger(Number(item.quantity)) || Number(item.quantity) <= 0 || !Number.isFinite(Number(String(item.unit_price).replace(",", "."))) || Number(String(item.unit_price).replace(",", ".")) <= 0);
+    if (invalidItem) {
+      alert(`Informe quantidade inteira e preço unitário maior que zero para ${invalidItem.product.name}.`);
+      return;
+    }
+    let createdContract = null;
     try {
       // Converte o valor em Reais digitado para centavos (conforme esperado pelo backend Rust)
       const cents = Math.round(parseFloat(formData.total_value || "0") * 100);
@@ -99,13 +149,30 @@ function Contratos({ onNavigate }) {
         end_date: formData.end_date,
       };
 
-      await invoke("create_contract", { data: payload });
+      createdContract = await invoke("create_contract", { data: payload });
+      for (const item of productsList) {
+        await invoke("create_contract_item", {
+          data: {
+            contract_id: createdContract.id,
+            product: item.product,
+            item_qtd: Number(item.quantity),
+            delivered_qtd: 0,
+            unit_price: Math.round(Number(String(item.unit_price).replace(",", ".")) * 100),
+          },
+        });
+      }
       alert("Contrato cadastrado com sucesso!");
       fetchContracts();
       setViewMode("list");
     } catch (err) {
       console.error("Erro ao salvar contrato:", err);
-      alert("Erro ao salvar contrato: " + err);
+      if (createdContract) {
+        fetchContracts();
+        setViewMode("list");
+        alert(`O contrato foi cadastrado, mas houve um erro ao vincular um ou mais produtos: ${err}`);
+      } else {
+        alert("Erro ao salvar contrato: " + err);
+      }
     }
   };
 
@@ -500,18 +567,14 @@ function Contratos({ onNavigate }) {
 
                   <div className="form-group">
                     <label>Instituição / Órgão</label>
-                    <select
-                      name="institution_id"
-                      value={formData.institution_id}
-                      onChange={handleInputChange}
+                    <button
+                      type="button"
+                      className={`contract-institution-select ${formData.institution_id ? "selected" : ""}`}
+                      onClick={openInstitutionPicker}
                     >
-                      <option value="">Selecione a instituição</option>
-                        {institutions.map((inst) => (
-                          <option key={inst.id} value={inst.id}>
-                            {inst.name}
-                          </option>
-                        ))}
-                    </select>
+                      <span>{institutions.find((inst) => String(inst.id) === String(formData.institution_id))?.name || "Selecionar instituição"}</span>
+                      <span aria-hidden="true">⌄</span>
+                    </button>
                   </div>
 
                   <div className="form-group">
@@ -560,38 +623,60 @@ function Contratos({ onNavigate }) {
                 <div className="contract-products-section">
                   <div className="products-section-header">
                     <h3>Produtos do contrato</h3>
-                    <button
-                      type="button"
-                      className="btn-add-product"
-                      onClick={handleAddProduct}
-                    >
-                      <span className="plus-icon">+</span> Adicionar produto
-                    </button>
+                    <div className="contract-product-picker">
+                      <select
+                        aria-label="Produto cadastrado"
+                        value={selectedProductId}
+                        onChange={(event) => setSelectedProductId(event.target.value)}
+                        disabled={productsLoading || availableProducts.length === 0}
+                      >
+                        <option value="">{productsLoading ? "Carregando produtos..." : "Selecione um produto cadastrado"}</option>
+                        {availableProducts.filter((product) => !productsList.some((item) => item.product.id === product.id)).map((product) => (
+                          <option key={product.id} value={product.id}>
+                            {product.name} · {product.category} · {product.measurement_unit}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        className="btn-add-product"
+                        onClick={handleAddProduct}
+                        disabled={!selectedProductId}
+                      >
+                        <span className="plus-icon">+</span> Adicionar produto
+                      </button>
+                    </div>
                   </div>
+
+                  {availableProducts.length === 0 && !productsLoading && (
+                    <p className="contract-products-empty">Nenhum produto ativo cadastrado. Cadastre produtos na tela Produtos para vinculá-los ao contrato.</p>
+                  )}
 
                   <div className="table-wrapper">
                     <table className="products-table">
                       <thead>
                         <tr>
                           <th>Produto</th>
-                          <th>Sabor</th>
+                          <th>Categoria</th>
                           <th>Quantidade</th>
                           <th>Unidade</th>
+                          <th>Preço unitário</th>
                           <th className="text-center">Ações</th>
                         </tr>
                       </thead>
                       <tbody>
                         {productsList.map((item) => (
-                          <tr key={item.id}>
-                            <td>{item.name}</td>
-                            <td>{item.flavor}</td>
-                            <td>{item.quantity}</td>
-                            <td>{item.unit}</td>
+                          <tr key={item.rowId}>
+                            <td>{item.product.name}</td>
+                            <td>{item.product.category}</td>
+                            <td><input className="contract-product-number" type="number" min="1" step="1" value={item.quantity} aria-label={`Quantidade de ${item.product.name}`} onChange={(event) => setProductsList((prev) => prev.map((row) => row.rowId === item.rowId ? { ...row, quantity: event.target.value } : row))} /></td>
+                            <td>{item.product.measurement_unit}</td>
+                            <td><input className="contract-product-number" type="number" min="0.01" step="0.01" value={item.unit_price} aria-label={`Preço unitário de ${item.product.name}`} onChange={(event) => setProductsList((prev) => prev.map((row) => row.rowId === item.rowId ? { ...row, unit_price: event.target.value } : row))} /></td>
                             <td className="text-center">
                               <button
                                 type="button"
                                 className="btn-delete-row"
-                                onClick={() => handleRemoveProduct(item.id)}
+                                onClick={() => handleRemoveProduct(item.rowId)}
                                 title="Remover produto"
                               >
                                 🗑️
@@ -599,6 +684,7 @@ function Contratos({ onNavigate }) {
                             </td>
                           </tr>
                         ))}
+                        {productsList.length === 0 && <tr><td colSpan="6" className="contract-products-empty">Selecione um produto cadastrado para vinculá-lo ao contrato.</td></tr>}
                       </tbody>
                     </table>
                   </div>
@@ -648,6 +734,42 @@ function Contratos({ onNavigate }) {
               </div>
             </div>
           </main>
+        )}
+
+        {viewMode === "create" && institutionPickerOpen && (
+          <div className="modal-overlay contract-institution-overlay" onClick={() => setInstitutionPickerOpen(false)}>
+            <div className="modal-card contract-institution-modal" onClick={(event) => event.stopPropagation()}>
+              {institutionSubView === "create" ? (
+                <CadastrarInstituicao
+                  onInstituicaoCadastrada={handleInstitutionCreated}
+                  onCancel={() => setInstitutionSubView("select")}
+                />
+              ) : (
+                <>
+                  <div className="modal-header">
+                    <div><h2>Selecionar instituição</h2><p>Escolha uma instituição cadastrada ou adicione uma nova.</p></div>
+                    <button type="button" className="modal-close" onClick={() => setInstitutionPickerOpen(false)} aria-label="Fechar">✕</button>
+                  </div>
+                  <div className="modal-body contract-institution-body">
+                    <label className="contract-institution-search">Buscar instituição<input type="search" value={institutionSearch} onChange={(event) => setInstitutionSearch(event.target.value)} placeholder="Nome ou CNPJ" autoFocus /></label>
+                    <div className="contract-institution-list">
+                      {filteredInstitutions.length ? filteredInstitutions.map((institution) => (
+                        <button type="button" key={institution.id} className={`contract-institution-option ${String(pendingInstitutionId) === String(institution.id) ? "selected" : ""}`} onClick={() => setPendingInstitutionId(String(institution.id))}>
+                          <span className="contract-institution-radio" aria-hidden="true">{String(pendingInstitutionId) === String(institution.id) ? "●" : "○"}</span>
+                          <span className="contract-institution-copy"><strong>{institution.name}</strong><small>{institution.cnpj} · {institution.institution_type === "Publica" ? "Pública" : "Privada"}</small></span>
+                        </button>
+                      )) : <p className="contract-institution-empty">Nenhuma instituição encontrada.</p>}
+                    </div>
+                    <button type="button" className="contract-institution-new" onClick={() => setInstitutionSubView("create")}>＋ Cadastrar nova instituição</button>
+                  </div>
+                  <div className="modal-footer">
+                    <button type="button" className="btn-cancel" onClick={() => setInstitutionPickerOpen(false)}>Cancelar</button>
+                    <button type="button" className="btn-save-contract" onClick={selectInstitution} disabled={!pendingInstitutionId}>Usar instituição</button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         )}
 
         {/* Rodapé da Página */}

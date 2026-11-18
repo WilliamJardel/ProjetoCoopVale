@@ -361,6 +361,192 @@
   font-size: 16px;
 }
 
+.contract-product-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.contract-product-picker select,
+.contract-product-number {
+  min-height: 36px;
+  padding: 6px 9px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  color: #374151;
+  font-size: 13px;
+}
+
+.contract-product-picker select {
+  min-width: 250px;
+  max-width: 360px;
+}
+
+.contract-product-number {
+  width: 100px;
+}
+
+.contract-product-picker button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.contract-products-empty {
+  padding: 12px;
+  color: #77796f;
+  font-size: 13px;
+}
+
+.contract-institution-select {
+  display: flex;
+  width: 100%;
+  min-height: 40px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 11px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  color: #6b7280;
+  text-align: left;
+  cursor: pointer;
+}
+
+.contract-institution-select.selected {
+  color: #2d332a;
+}
+
+.contract-institution-overlay {
+  z-index: 1100;
+}
+
+.contract-institution-modal {
+  max-width: 620px;
+}
+
+.contract-institution-modal .modal-header p {
+  margin: 5px 0 0;
+  color: #71776d;
+  font-size: 13px;
+}
+
+.contract-institution-body {
+  display: grid;
+  gap: 14px;
+}
+
+.contract-institution-search {
+  display: grid;
+  gap: 6px;
+  color: #4b5545;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.contract-institution-search input {
+  width: 100%;
+  height: 40px;
+  padding: 8px 11px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  font-size: 14px;
+}
+
+.contract-institution-list {
+  display: grid;
+  max-height: 310px;
+  gap: 7px;
+  overflow-y: auto;
+}
+
+.contract-institution-option {
+  display: flex;
+  min-height: 60px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  color: #2d332a;
+  text-align: left;
+}
+
+.contract-institution-option:hover,
+.contract-institution-option.selected {
+  border-color: #8fb36f;
+  background: #f5f9ef;
+}
+
+.contract-institution-radio {
+  color: #588e38;
+  font-size: 18px;
+}
+
+.contract-institution-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.contract-institution-copy strong {
+  font-size: 14px;
+}
+
+.contract-institution-copy small {
+  color: #71776d;
+  font-size: 12px;
+}
+
+.contract-institution-empty {
+  margin: 0;
+  padding: 22px 10px;
+  color: #71776d;
+  font-size: 13px;
+  text-align: center;
+}
+
+.contract-institution-new {
+  min-height: 40px;
+  border: 1px dashed #8fb36f;
+  border-radius: 7px;
+  background: #f8fbf4;
+  color: #3a6322;
+  font-weight: 700;
+}
+
+.contract-institution-form .form-grid-2 {
+  gap: 14px 16px;
+}
+
+.contract-institution-form .form-group label {
+  margin-bottom: 6px;
+}
+
+.contract-institution-error {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border: 1px solid #fcc2a5;
+  border-radius: 7px;
+  background: #fde2dc;
+  color: #a1300a;
+  font-size: 13px;
+}
+
+@media (max-width: 760px) {
+  .products-section-header,
+  .contract-product-picker {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .contract-product-picker select {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+}
+
 .margin-top-20 {
   margin-top: 20px;
 }
