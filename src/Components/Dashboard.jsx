@@ -91,21 +91,17 @@ function Dashboard({ onNavigate }) {
             <span className="nav-icon">📊</span>
             <span>Relatórios</span>
           </button>
-          <button type="button" className="nav-item">
+          <button type="button" className="nav-item" onClick={() => onNavigate?.("produtos")}>
             <span className="nav-icon">📦</span>
             <span>Produtos</span>
           </button>
-          <button type="button" className="nav-item">
+          <button type="button" className="nav-item" onClick={() => onNavigate?.("entregas")}>
             <span className="nav-icon">🚚</span>
             <span>Entregas</span>
           </button>
-          <button type="button" className="nav-item">
+          <button type="button" className="nav-item" onClick={() => onNavigate?.("dashboard")}>
             <span className="nav-icon">🔔</span>
             <span>Avisos</span>
-          </button>
-          <button type="button" className="nav-item">
-            <span className="nav-icon">⚙️</span>
-            <span>Configurações</span>
           </button>
         </nav>
       </aside>

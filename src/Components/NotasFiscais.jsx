@@ -1,5 +1,11 @@
 
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { useAuth } from "../context/AuthContext";
+import {
+  formatCurrencyInput,
+  parseCurrencyInput,
+} from "../utils/inputFormatters";
 import { menuIcons } from "./Icons";
 import {
   Home,
@@ -29,37 +35,222 @@ import "../Styles/NotasFiscais.css";
 import iconCoopVale from "../public/img/iconCoopVale.png";
 
 function NotasFiscais({ onNavigate }) {
+  const { session } = useAuth();
   const [busca, setBusca] = useState("");
   const [status, setStatus] = useState("");
-  const [tipo, setTipo] = useState("");
   const [periodo, setPeriodo] = useState("");
 
   const [filtros, setFiltros] = useState({
     busca: "",
     status: "",
-    tipo: "",
     periodo: "",
   });
 
   const [modalCadastroAberto, setModalCadastroAberto] = useState(false);
-
+  const [editingPaymentId, setEditingPaymentId] = useState(null);
+  const [contracts, setContracts] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [institutions, setInstitutions] = useState([]);
+  const [notasFiscais, setNotasFiscais] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [novaNota, setNovaNota] = useState({
-  numero: "",
-  tipo: "Entrada",
-  valor: "",
-  contrato: "",
-  pagamento: "",
+    numero: "",
+    valor: "",
+    data_emissao: new Date().toISOString().slice(0, 10),
+    contrato: "",
+    pagamento: "",
   });
 
   const atualizarNota = (campo, valor) => {
     setNovaNota((anterior) => ({
-    ...anterior,
-    [campo]: valor,
-  }));
+      ...anterior,
+      [campo]: valor,
+    }));
   };
 
-  // As notas serão carregadas do banco de dados futuramente.
-  const notasFiscais = [];
+  const formatCurrency = (cents = 0) =>
+    (cents / 100).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+
+  const formatDate = (date) => {
+    if (!date) return "—";
+    const [year, month, day] = date.split("-");
+    return `${day}/${month}/${year}`;
+  };
+
+  const loadInvoiceData = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const [invoiceData, contractData, paymentData, institutionData] =
+        await Promise.all([
+          invoke("list_invoices"),
+          invoke("list_contracts"),
+          invoke("list_payments"),
+          invoke("list_institutions"),
+        ]);
+
+      setContracts(contractData || []);
+      setPayments(paymentData || []);
+      setInstitutions(institutionData || []);
+      setNotasFiscais(
+        (invoiceData || []).map((invoice) => {
+          const contract = (contractData || []).find(
+            (item) => item.id === invoice.contract_id,
+          );
+          const institution = (institutionData || []).find(
+            (item) => item.id === contract?.institution_id,
+          );
+
+          return {
+            id: invoice.payment_id,
+            payment_id: invoice.payment_id,
+            contract_id: invoice.contract_id,
+            numero: invoice.number || `P${invoice.payment_id}`,
+            number: invoice.number,
+            amount_cents: invoice.amount_cents,
+            issue_date: invoice.issue_date,
+            tipo: "Saída",
+            fornecedor: institution?.name || "Não informado",
+            contrato: String(invoice.contract_id),
+            dataEmissaoISO: invoice.issue_date,
+            dataEmissao: invoice.issue_date
+              ? formatDate(invoice.issue_date)
+              : "—",
+            valor: formatCurrency(
+              invoice.amount_cents ?? invoice.payment_amount_cents,
+            ),
+            status: invoice.status,
+          };
+        }),
+      );
+    } catch (err) {
+      console.error("Erro ao carregar notas fiscais:", err);
+      setError(`Não foi possível carregar as notas fiscais: ${err}`);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadInvoiceData();
+  }, [loadInvoiceData]);
+
+  const availablePayments = useMemo(() => {
+    const paymentIdsWithInvoice = new Set(
+      notasFiscais
+        .filter((invoice) => invoice.number)
+        .map((invoice) => invoice.payment_id),
+    );
+
+    return payments.filter(
+      (payment) =>
+        !paymentIdsWithInvoice.has(payment.id) &&
+        (editingPaymentId !== null ||
+          !novaNota.contrato ||
+          payment.contract_id === Number(novaNota.contrato)),
+    );
+  }, [payments, notasFiscais, novaNota.contrato, editingPaymentId]);
+
+  const openRegistrationModal = () => {
+    setEditingPaymentId(null);
+    setNovaNota({
+      numero: "",
+      valor: "",
+      data_emissao: new Date().toISOString().slice(0, 10),
+      contrato: "",
+      pagamento: "",
+    });
+    setError("");
+    setSuccess("");
+    setModalCadastroAberto(true);
+  };
+
+  const openEditModal = (invoice) => {
+    const hasInvoice = Boolean(invoice.number);
+    setEditingPaymentId(hasInvoice ? invoice.payment_id : null);
+    const pendingPayment = payments.find(
+      (payment) => payment.id === invoice.payment_id,
+    );
+    setNovaNota({
+      numero: invoice.number || "",
+      valor: invoice.amount_cents
+        ? formatCurrencyInput(String(invoice.amount_cents))
+        : pendingPayment
+          ? formatCurrencyInput(String(pendingPayment.amount_cents))
+          : "",
+      data_emissao: invoice.issue_date || new Date().toISOString().slice(0, 10),
+      contrato: String(invoice.contract_id),
+      pagamento: String(invoice.payment_id),
+    });
+    setError("");
+    setSuccess("");
+    setModalCadastroAberto(true);
+  };
+
+  const handleRemoveInvoice = async (invoice) => {
+    if (!window.confirm("Deseja remover a nota fiscal deste pagamento?")) return;
+    setError("");
+    setSuccess("");
+    try {
+      await invoke("remove_invoice", { paymentId: invoice.payment_id });
+      setSuccess("Nota fiscal removida com sucesso.");
+      await loadInvoiceData();
+    } catch (err) {
+      console.error("Erro ao remover nota fiscal:", err);
+      setError(String(err));
+    }
+  };
+
+  const handleSubmitInvoice = async (event) => {
+    event.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!novaNota.pagamento) {
+      setError("Selecione o pagamento relacionado à nota fiscal.");
+      return;
+    }
+
+    const amount = parseCurrencyInput(novaNota.valor);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setError("Informe um valor de nota fiscal maior que zero.");
+      return;
+    }
+
+    const data = {
+      number: novaNota.numero.trim(),
+      amount_cents: Math.round(amount * 100),
+      issue_date: novaNota.data_emissao,
+    };
+
+    setSaving(true);
+    try {
+      const result = editingPaymentId
+        ? await invoke("update_invoice", {
+            paymentId: editingPaymentId,
+            data,
+          })
+        : await invoke("register_invoice", {
+            paymentId: Number(novaNota.pagamento),
+            data,
+          });
+
+      setSuccess(result.message);
+      setModalCadastroAberto(false);
+      await loadInvoiceData();
+    } catch (err) {
+      console.error("Erro ao salvar nota fiscal:", err);
+      setError(String(err));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const menuItems = [
     { nome: "Início", icone: menuIcons.dashboard, tela: "dashboard" },
@@ -69,33 +260,12 @@ function NotasFiscais({ onNavigate }) {
     { nome: "Relatórios", icone: menuIcons.relatorios, tela: "relatorios" },
     { nome: "Produtos", icone: menuIcons.produtos, tela: "produtos" },
     { nome: "Entregas", icone: menuIcons.entregas, tela: "entregas" },
-    { nome: "Avisos", icone: menuIcons.avisos, tela: "avisos" },
-    { nome: "Configurações", icone: menuIcons.configuracoes, tela: "configuracoes" },
-];
+  ];
 
-  const avisarPendente = () => {
-    alert("Essa funcionalidade ainda não foi integrada.");
-  };
-
-  const navegar = (tela) => {
-    const telasProntas = [
-      "dashboard",
-      "contratos",
-      "financeiro",
-      "relatorios",
-      "notas-fiscais",
-    ];
-
-    if (!telasProntas.includes(tela) || !onNavigate) {
-      avisarPendente();
-      return;
-    }
-
-    onNavigate(tela);
-  };
+  const navegar = (tela) => onNavigate?.(tela);
 
   const aplicarFiltros = () => {
-    setFiltros({ busca, status, tipo, periodo });
+    setFiltros({ busca, status, periodo });
   };
 
   const notasFiltradas = notasFiscais.filter((nota) => {
@@ -109,9 +279,6 @@ function NotasFiscais({ onNavigate }) {
 
     const correspondeStatus =
       !filtros.status || nota.status === filtros.status;
-
-    const correspondeTipo =
-    !filtros.tipo || nota.tipo === filtros.tipo;
 
     let correspondePeriodo = true;
 
@@ -144,19 +311,18 @@ function NotasFiscais({ onNavigate }) {
   return (
     correspondeBusca &&
     correspondeStatus &&
-    correspondeTipo &&
     correspondePeriodo
   );
 });
 
   const totalNotas = notasFiltradas.length;
 
-  const emitidas = notasFiltradas.filter(
-    (nota) => nota.status === "Emitida"
+  const conferidas = notasFiltradas.filter(
+    (nota) => nota.status === "Conferida"
   ).length;
 
-  const recebidas = notasFiltradas.filter(
-    (nota) => nota.status === "Recebida"
+  const divergentes = notasFiltradas.filter(
+    (nota) => nota.status === "Divergente"
   ).length;
 
   const pendentes = notasFiltradas.filter(
@@ -171,33 +337,33 @@ function NotasFiscais({ onNavigate }) {
       cor: "bg-[#e7efdc]",
     },
     {
-      titulo: "Emitidas",
-      valor: emitidas,
+      titulo: "Conferidas",
+      valor: conferidas,
       icone: CheckCircle2,
       cor: "bg-[#edf3df]",
     },
     {
-      titulo: "Recebidas",
-      valor: recebidas,
-      icone: FileText,
-      cor: "bg-[#d5edfc]",
+      titulo: "Divergentes",
+      valor: divergentes,
+      icone: Bell,
+      cor: "bg-[#ffdada]",
     },
     {
       titulo: "Pendentes",
       valor: pendentes,
       icone: Clock3,
-      cor: "bg-[#ffdada]",
+      cor: "bg-[#fff1b8]",
     },
   ];
 
   const corStatus = (situacao) => {
     switch (situacao) {
-      case "Emitida":
+      case "Conferida":
         return "bg-sky-100 text-sky-700";
-      case "Recebida":
-        return "bg-green-100 text-green-700";
+      case "Divergente":
+        return "bg-red-100 text-red-700";
       case "Pendente":
-        return "bg-yellow-100 text-yellow-700";
+        return "bg-green-100 text-green-700";
       default:
         return "bg-gray-100 text-gray-600";
     }
@@ -253,7 +419,7 @@ function NotasFiscais({ onNavigate }) {
             <div className="flex items-center gap-5">
               <button
                 type="button"
-                onClick={avisarPendente}
+                onClick={() => onNavigate?.("dashboard")}
                 className="relative text-gray-500"
                 title="Notificações"
               >
@@ -265,7 +431,7 @@ function NotasFiscais({ onNavigate }) {
                   <UserRound size={23} />
                 </div>
                 <div className="text-xs">
-                  <p className="font-semibold">Usuário</p>
+                  <p className="font-semibold">{session?.name || "Usuário"}</p>
                   <p className="text-gray-500">Administrador</p>
                 </div>
                 <ChevronDown size={15} className="text-gray-500" />
@@ -273,11 +439,22 @@ function NotasFiscais({ onNavigate }) {
             </div>
           </header>
 
+          {error && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700" role="status">
+              {success}
+            </div>
+          )}
+
           {/* Cadastro de notas fiscais */}
           <div className="mb-4 flex justify-end">
             <button
               type="button"
-              onClick={() => setModalCadastroAberto(true)}
+              onClick={openRegistrationModal}
               className="flex items-center gap-2 rounded-lg bg-[#588e38] px-4 py-3 text-sm font-medium text-white hover:bg-[#3a6322]"
             >
               <Plus size={19} />
@@ -307,19 +484,9 @@ function NotasFiscais({ onNavigate }) {
               className="notas-input xl:col-span-2"
             >
               <option value="">Status</option>
-              <option value="Emitida">Emitida</option>
-              <option value="Recebida">Recebida</option>
+              <option value="Conferida">Conferida</option>
+              <option value="Divergente">Divergente</option>
               <option value="Pendente">Pendente</option>
-            </select>
-
-            <select
-              value={tipo}
-              onChange={(e) => setTipo(e.target.value)}
-              className="notas-input xl:col-span-2"
-            >
-              <option value="">Tipo</option>
-              <option value="Entrada">Entrada</option>
-              <option value="Saída">Saída</option>
             </select>
 
             <select
@@ -398,7 +565,13 @@ function NotasFiscais({ onNavigate }) {
                 </thead>
 
                 <tbody>
-                  {notasFiltradas.length === 0 ? (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={8} className="p-12 text-center text-sm text-gray-500">
+                        Carregando notas fiscais...
+                      </td>
+                    </tr>
+                  ) : notasFiltradas.length === 0 ? (
                     <tr>
                       <td
                         colSpan={8}
@@ -434,27 +607,21 @@ function NotasFiscais({ onNavigate }) {
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
-                              onClick={avisarPendente}
-                              title="Visualizar"
+                              onClick={() => openEditModal(nota)}
+                              title={nota.status === "Pendente" ? "Cadastrar nota" : "Editar nota"}
                             >
                               <Eye size={16} />
                             </button>
 
                             <button
                               type="button"
-                              onClick={avisarPendente}
-                              className="flex items-center gap-1 rounded border px-2 py-1"
+                              disabled={nota.status === "Pendente"}
+                              onClick={() => handleRemoveInvoice(nota)}
+                              className="flex items-center gap-1 rounded border px-2 py-1 disabled:cursor-not-allowed disabled:opacity-40"
+                              title="Remover nota"
                             >
                               <Download size={14} />
-                              Baixar
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={avisarPendente}
-                              title="Mais opções"
-                            >
-                              <MoreVertical size={16} />
+                              Remover
                             </button>
                           </div>
                         </td>
@@ -496,10 +663,7 @@ function NotasFiscais({ onNavigate }) {
               </p>
 
               <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  avisarPendente();
-                }}
+                onSubmit={handleSubmitInvoice}
                 >
 
                 <div className="notas-modal-fields">
@@ -518,31 +682,33 @@ function NotasFiscais({ onNavigate }) {
                   </div>
 
                   <div>
-                    <label htmlFor="nota-tipo">Tipo</label>
-                    <select
-                      id="nota-tipo"
-                      value={novaNota.tipo}
-                      onChange={(e) =>
-                        atualizarNota("tipo", e.target.value)
-                      }
-                    >
-                      <option value="Entrada">Entrada</option>
-                      <option value="Saída">Saída</option>
-                    </select>
-                  </div>
-
-                  <div>
                     <label htmlFor="nota-valor">Valor da nota (R$)</label>
                     <input
                       id="nota-valor"
-                      type="number"
-                      min="0.01"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
                       required
                       placeholder="0,00"
                       value={novaNota.valor}
                       onChange={(e) =>
-                        atualizarNota("valor", e.target.value)
+                        atualizarNota(
+                          "valor",
+                          formatCurrencyInput(e.target.value),
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="nota-data-emissao">Data de emissão</label>
+                    <input
+                      id="nota-data-emissao"
+                      type="date"
+                      required
+                      max={new Date().toISOString().slice(0, 10)}
+                      value={novaNota.data_emissao}
+                      onChange={(e) =>
+                        atualizarNota("data_emissao", e.target.value)
                       }
                     />
                   </div>
@@ -555,22 +721,54 @@ function NotasFiscais({ onNavigate }) {
                     <select
                       id="nota-contrato"
                       value={novaNota.contrato}
-                      onChange={(e) =>
-                        atualizarNota("contrato", e.target.value)
-                      }
+                      disabled={Boolean(editingPaymentId)}
+                      onChange={(e) => {
+                        atualizarNota("contrato", e.target.value);
+                        atualizarNota("pagamento", "");
+                      }}
                     >
                       <option value="">Selecione um contrato</option>
+                      {contracts.map((contract) => (
+                        <option key={contract.id} value={contract.id}>
+                          Contrato #{contract.id}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
                   <div>
-                  <label>Pagamentos vinculados</label>
-
-                  <p className="notas-modal-info">
-                    Os pagamentos serão vinculados após a integração
-                    com o módulo Financeiro.
-                  </p>
-                </div>
+                    <label htmlFor="nota-pagamento">Pagamento vinculado</label>
+                    <select
+                      id="nota-pagamento"
+                      value={novaNota.pagamento}
+                      disabled={Boolean(editingPaymentId)}
+                      onChange={(e) => {
+                        const paymentId = e.target.value;
+                        const payment = payments.find(
+                          (item) => item.id === Number(paymentId),
+                        );
+                        atualizarNota("pagamento", paymentId);
+                        if (payment) {
+                          atualizarNota(
+                            "contrato",
+                            String(payment.contract_id),
+                          );
+                          atualizarNota(
+                            "valor",
+                            formatCurrencyInput(String(payment.amount_cents)),
+                          );
+                        }
+                      }}
+                    >
+                      <option value="">Selecione um pagamento</option>
+                      {availablePayments.map((payment) => (
+                        <option key={payment.id} value={payment.id}>
+                          {formatCurrency(payment.amount_cents)} —{" "}
+                          {formatDate(payment.payment_date)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="notas-modal-actions">
@@ -582,8 +780,8 @@ function NotasFiscais({ onNavigate }) {
                     Cancelar
                   </button>
 
-                  <button type="submit" className="notas-salvar">
-                    Salvar nota fiscal
+                  <button type="submit" className="notas-salvar" disabled={saving}>
+                    {saving ? "Salvando..." : "Salvar nota fiscal"}
                   </button>
                 </div>
               </form>
