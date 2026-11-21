@@ -6,6 +6,7 @@ import Financeiro from "./Components/Financeiro";
 import CadastrarInstituicao from "./Components/CadastrarInstituicao";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Relatorios from "./Components/Relatorios";
+import NotasFiscais from "./Components/NotasFiscais";
 
 function MainContent() {
   const { session, loading } = useAuth();
@@ -46,6 +47,8 @@ function MainContent() {
       return <Relatorios onNavigate={setCurrentScreen} />;
     case "instituicoes":
       return <CadastrarInstituicao onNavigate={setCurrentScreen} />;
+    case "notas-fiscais":
+      return <NotasFiscais onNavigate={setCurrentScreen} />;
     case "dashboard":
     default:
       return <Dashboard onNavigate={setCurrentScreen} />;
