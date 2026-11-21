@@ -3,6 +3,7 @@ import Login from "./Components/login";
 import Dashboard from "./Components/Dashboard";
 import Contratos from "./Components/Contratos";
 import Financeiro from "./Components/Financeiro";
+import CadastrarInstituicao from "./Components/CadastrarInstituicao";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Relatorios from "./Components/Relatorios";
 
@@ -43,6 +44,8 @@ function MainContent() {
       return <Financeiro onNavigate={setCurrentScreen} />;
     case "relatorios":
       return <Relatorios onNavigate={setCurrentScreen} />;
+    case "instituicoes":
+      return <CadastrarInstituicao onNavigate={setCurrentScreen} />;
     case "dashboard":
     default:
       return <Dashboard onNavigate={setCurrentScreen} />;

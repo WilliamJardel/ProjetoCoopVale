@@ -3,8 +3,8 @@ use crate::contractItem::repository;
 use crate::contract::model::ContractStatus;
 use crate::contract::repository as contract_repository;
 use crate::db::error_message;
-use crate::Product::model::Status;
-use crate::Product::repository as product_repository;
+use crate::product::model::Status;
+use crate::product::repository as product_repository;
 use rusqlite::Connection;
 
 fn validate(
