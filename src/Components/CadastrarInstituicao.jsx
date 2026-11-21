@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { formatCnpjInput } from "../utils/inputFormatters";
+import {
+  formatCnpjInput,
+  formatPhoneInput,
+} from "../utils/inputFormatters";
 
 export default function CadastrarInstituicao({
   onInstituicaoCadastrada,
@@ -22,7 +25,12 @@ export default function CadastrarInstituicao({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "cnpj" ? formatCnpjInput(value) : value,
+      [name]:
+        name === "cnpj"
+          ? formatCnpjInput(value)
+          : name === "telephone"
+            ? formatPhoneInput(value)
+            : value,
     }));
   };
 
@@ -87,6 +95,18 @@ export default function CadastrarInstituicao({
           <button type="button" className="nav-item" onClick={() => onNavigate?.("financeiro")}>
             <span className="nav-icon">💲</span><span>Financeiro</span>
           </button>
+          <button type="button" className="nav-item" onClick={() => onNavigate?.("notas-fiscais")}>
+            <span className="nav-icon">🧾</span><span>Notas Fiscais</span>
+          </button>
+          <button type="button" className="nav-item" onClick={() => onNavigate?.("produtos")}>
+            <span className="nav-icon">📦</span><span>Produtos</span>
+          </button>
+          <button type="button" className="nav-item" onClick={() => onNavigate?.("entregas")}>
+            <span className="nav-icon">🚚</span><span>Entregas</span>
+          </button>
+          <button type="button" className="nav-item" onClick={() => onNavigate?.("relatorios")}>
+            <span className="nav-icon">📊</span><span>Relatórios</span>
+          </button>
           <button type="button" className="nav-item active" onClick={() => onNavigate?.("instituicoes")}>
             <span className="nav-icon">🏢</span><span>Instituições</span>
           </button>
@@ -138,7 +158,7 @@ export default function CadastrarInstituicao({
 
               <div style={{ marginBottom: "12px" }}>
                 <label style={{ display: "block", marginBottom: "4px" }}>Telefone</label>
-                <input type="text" name="telephone" value={formData.telephone} onChange={handleChange} style={{ width: "100%", padding: "8px" }} />
+                <input type="tel" name="telephone" placeholder="(49) 99999-9999" value={formData.telephone} onChange={handleChange} maxLength={15} style={{ width: "100%", padding: "8px" }} />
               </div>
 
               <div style={{ marginBottom: "12px" }}>
