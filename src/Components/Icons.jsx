@@ -1,0 +1,48 @@
+import {
+  House,
+  FileText,
+  HandCoins,
+  Receipt,
+  ChartColumnIncreasing,
+  Package,
+  Truck,
+  Bell,
+  Settings,
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  Eye,
+  Download,
+  Upload,
+  Save,
+  X,
+  Check,
+  Filter,
+} from "lucide-react";
+
+export const menuIcons = {
+  dashboard: House,
+  contratos: FileText,
+  financeiro: HandCoins,
+  "notas-fiscais": Receipt,
+  relatorios: ChartColumnIncreasing,
+  produtos: Package,
+  entregas: Truck,
+  avisos: Bell,
+  configuracoes: Settings,
+};
+
+export const actionIcons = {
+  adicionar: Plus,
+  editar: Pencil,
+  excluir: Trash2,
+  buscar: Search,
+  visualizar: Eye,
+  baixar: Download,
+  enviar: Upload,
+  salvar: Save,
+  fechar: X,
+  confirmar: Check,
+  filtrar: Filter,
+};
