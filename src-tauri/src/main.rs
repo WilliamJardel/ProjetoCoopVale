@@ -7,8 +7,10 @@ mod institution;
 mod contract;
 mod contractItem;
 mod delivery;
-mod Product;
+mod product;
 mod payment;
+mod dashboard;
+mod invoice;
 
 use auth::commands as auth_commands;
 use auth::rate_limit::LoginAttempts;
@@ -40,6 +42,8 @@ fn main() {
             user_commands::authenticate_user,
             user_commands::get_user,
             user_commands::list_users,
+            user_commands::update_profile_name,
+            user_commands::change_password,
             auth_commands::login,
             auth_commands::logout,
             auth_commands::current_session,
@@ -51,15 +55,7 @@ fn main() {
             institution::commands::list_institutions,
             contract::commands::create_contract,
             contract::commands::update_contract,
-            contract::commands::delete_contract,
-            contract::commands::get_contract,
             contract::commands::list_contracts,
-            contract::commands::list_contracts_by_institution,
-            Product::commands::create_product,
-            Product::commands::update_product,
-            Product::commands::deactivate_product,
-            Product::commands::get_product,
-            Product::commands::list_products,
             contractItem::commands::create_contract_item,
             contractItem::commands::update_contract_item,
             contractItem::commands::delete_contract_item,
@@ -79,7 +75,19 @@ fn main() {
             payment::commands::list_payments,
             payment::commands::list_payments_by_contract,
             payment::commands::get_contract_balance,
+            product::commands::create_product,
+            product::commands::update_product,
+            product::commands::deactivate_product,
+            product::commands::get_product,
+            product::commands::list_products,
+            dashboard::commands::get_dashboard_summary,
+            invoice::commands::register_invoice,
+            invoice::commands::update_invoice,
+            invoice::commands::remove_invoice,
+            invoice::commands::get_invoice,
+            invoice::commands::list_invoices,
+            invoice::commands::list_invoices_by_contract,
         ])
         .run(tauri::generate_context!())
-        .expect("erro ao rodar a aplicação Tauri");
+        .expect("error while running tauri application");
 }

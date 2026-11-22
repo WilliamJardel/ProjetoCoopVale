@@ -3,16 +3,20 @@ import Login from "./Components/login";
 import Dashboard from "./Components/Dashboard";
 import Contratos from "./Components/Contratos";
 import Financeiro from "./Components/Financeiro";
+import CadastrarInstituicao from "./Components/CadastrarInstituicao";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import Relatorios from "./Components/Relatorios";
+import NotasFiscais from "./Components/NotasFiscais";
 import Produtos from "./Components/Produtos";
 import Entregas from "./Components/Entregas";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import Perfil from "./Components/Perfil";
 
 function MainContent() {
   const { session, loading } = useAuth();
-  // Estado para controlar a tela atual quando o usuário está logado ('dashboard' ou 'contratos')
+
   const [currentScreen, setCurrentScreen] = useState("dashboard");
 
-  // Exibe tela de carregamento rápida enquanto verifica se há sessão ativa no SQLite/Rust
+  
   if (loading) {
     return (
       <div
@@ -31,21 +35,29 @@ function MainContent() {
     );
   }
 
-  // Se NÃO existir sessão ativa, exibe o Login
+  
   if (!session) {
     return <Login />;
   }
 
-  // Se existir sessão ativa, renderiza a tela selecionada
+  
   switch (currentScreen) {
     case "contratos":
       return <Contratos onNavigate={setCurrentScreen} />;
     case "financeiro":
       return <Financeiro onNavigate={setCurrentScreen} />;
+    case "relatorios":
+      return <Relatorios onNavigate={setCurrentScreen} />;
+    case "instituicoes":
+      return <CadastrarInstituicao onNavigate={setCurrentScreen} />;
+    case "notas-fiscais":
+      return <NotasFiscais onNavigate={setCurrentScreen} />;
     case "produtos":
       return <Produtos onNavigate={setCurrentScreen} />;
     case "entregas":
       return <Entregas onNavigate={setCurrentScreen} />;
+    case "perfil":
+      return <Perfil onNavigate={setCurrentScreen} />;
     case "dashboard":
     default:
       return <Dashboard onNavigate={setCurrentScreen} />;

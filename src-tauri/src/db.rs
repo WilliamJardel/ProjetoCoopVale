@@ -147,15 +147,33 @@ fn create_tables(conn: &Connection) -> Result<()> {
             quantidade_entregue   INTEGER NOT NULL
                                    CHECK (quantidade_entregue > 0 AND quantidade_entregue <= quantidade_solicitada),
             data_entrega           TEXT NOT NULL,
-            observacao             TEXT NOT NULL DEFAULT ''
+            observacao             TEXT NOT NULL DEFAULT '',
+            status                 TEXT NOT NULL DEFAULT 'Entregue'
+                       CHECK (status IN ('Pendente', 'Entregue'))
         )",
         [],
     )?;
+    let has_delivery_status = {
+        let mut stmt = conn.prepare("PRAGMA table_info(entrega)")?;
+        let columns = stmt.query_map([], |row| row.get::<_, String>(1))?;
+        columns
+            .collect::<Result<Vec<_>>>()?
+            .iter()
+            .any(|column| column == "status")
+    };
+    if !has_delivery_status {
+        conn.execute(
+            "ALTER TABLE entrega ADD COLUMN status TEXT NOT NULL DEFAULT 'Entregue'
+             CHECK (status IN ('Pendente', 'Entregue'))",
+            [],
+        )?;
+    }
+
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_entrega_por_item ON entrega(item_contrato_id)",
         [],
     )?;
-        conn.execute(
+    conn.execute(
         "CREATE TABLE IF NOT EXISTS pagamento (
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
             contrato_id     INTEGER NOT NULL
@@ -170,7 +188,7 @@ fn create_tables(conn: &Connection) -> Result<()> {
         "CREATE INDEX IF NOT EXISTS idx_pagamento_por_contrato ON pagamento(contrato_id)",
         [],
     )?;
-    Ok(())
+    migrate_invoice_columns(conn)
 }
 
 pub fn is_unique_violation(e: &Error) -> bool {
@@ -193,6 +211,43 @@ pub fn error_message(e: Error) -> String {
         }
     }
     e.to_string()
+}
+
+fn column_exists(conn: &Connection, table: &str, column: &str) -> Result<bool> {
+    let mut stmt = conn.prepare(&format!("PRAGMA table_info({table})"))?;
+    let columns = stmt.query_map([], |row| row.get::<_, String>(1))?;
+    Ok(columns.collect::<Result<Vec<_>>>()?.iter().any(|c| c == column))
+}
+
+fn migrate_invoice_columns(conn: &Connection) -> Result<()> {
+    let columns = [
+        ("numero_nota_fiscal", "TEXT"),
+        (
+            "valor_nota_fiscal_centavos",
+            "INTEGER CHECK (valor_nota_fiscal_centavos IS NULL OR valor_nota_fiscal_centavos > 0)",
+        ),
+        ("data_emissao_nf", "TEXT"),
+        (
+            "status_conferencia",
+            "TEXT NOT NULL DEFAULT 'Pendente' \
+             CHECK (status_conferencia IN ('Pendente', 'Conferida', 'Divergente'))",
+        ),
+    ];
+    for (name, definition) in columns {
+        if !column_exists(conn, "pagamento", name)? {
+            conn.execute(
+                &format!("ALTER TABLE pagamento ADD COLUMN {name} {definition}"),
+                [],
+            )?;
+        }
+    }
+    conn.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_pagamento_numero_nf
+             ON pagamento(numero_nota_fiscal COLLATE NOCASE)
+          WHERE numero_nota_fiscal IS NOT NULL",
+        [],
+    )?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -247,6 +302,35 @@ mod tests {
                 .unwrap()
                 .is_none()
         );
+    }
+
+    #[test]
+    fn migrates_existing_payments_to_pending_invoice_status() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch(
+            "CREATE TABLE pagamento (
+                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                 contrato_id INTEGER NOT NULL,
+                 valor_centavos INTEGER NOT NULL,
+                 data_pagamento TEXT NOT NULL,
+                 observacao TEXT NOT NULL DEFAULT ''
+             );
+             INSERT INTO pagamento (contrato_id, valor_centavos, data_pagamento)
+             VALUES (1, 5000, '2026-03-10');",
+        )
+        .unwrap();
+
+        migrate_invoice_columns(&conn).unwrap();
+        migrate_invoice_columns(&conn).unwrap();
+
+        let row: (String, Option<String>) = conn
+            .query_row(
+                "SELECT status_conferencia, numero_nota_fiscal FROM pagamento WHERE id = 1",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(row, ("Pendente".to_string(), None));
     }
 
     #[test]

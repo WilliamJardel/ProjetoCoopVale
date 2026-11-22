@@ -14,16 +14,19 @@
   "author": "Equipe 3 de PI1 2026.2",
   "type": "commonjs",
   "scripts": {
-    "build": "webpack --mode production",
+    "build": "tailwindcss -i ./src/Styles/tailwind.css -o ./src/Styles/tailwind.generated.css --minify && webpack --mode production",
     "build:desktop": "tauri build",
     "start": "tauri dev",
     "tauri": "tauri",
-    "dev": "webpack serve --mode development"
+    "dev": "tailwindcss -i ./src/Styles/tailwind.css -o ./src/Styles/tailwind.generated.css --minify && webpack serve --mode development"
   },
   "dependencies": {
+    "@tailwindcss/cli": "^4.3.5",
     "@tauri-apps/api": "^2.12.4",
+    "lucide-react": "^1.77.0",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "tailwindcss": "^4.3.5"
   },
   "devDependencies": {
     "@babel/core": "^7.28.4",

@@ -1,6 +1,6 @@
 use rusqlite::{Result, Row};
 use serde::{Deserialize, Serialize};
-use crate::Product::model::Product;
+use crate::product::model::Product;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ContractItemData {

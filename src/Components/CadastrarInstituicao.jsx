@@ -1,7 +1,16 @@
 import React, { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import {
+  formatCnpjInput,
+  formatPhoneInput,
+} from "../utils/inputFormatters";
+import SidebarNavigation from "./SidebarNavigation";
+import UserProfileButton from "./UserProfileButton";
 
-export default function CadastrarInstituicao({ onInstituicaoCadastrada, onCancel }) {
+export default function CadastrarInstituicao({
+  onInstituicaoCadastrada,
+  onNavigate,
+}) {
   const [formData, setFormData] = useState({
     name: "",
     cnpj: "",
@@ -9,58 +18,134 @@ export default function CadastrarInstituicao({ onInstituicaoCadastrada, onCancel
     telephone: "",
     location: "",
   });
+
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState("");
+  const [sucesso, setSucesso] = useState("");
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setFormData((previous) => ({ ...previous, [name]: value }));
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]:
+        name === "cnpj"
+          ? formatCnpjInput(value)
+          : name === "telephone"
+            ? formatPhoneInput(value)
+            : value,
+    }));
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setErro("");
+    setSucesso("");
     setLoading(true);
+
+    // Estrutura exata esperada pela struct Institution do Rust
     const payload = {
       id: null,
-      name: formData.name.trim(),
-      cnpj: formData.cnpj.trim(),
-      institution_type: formData.institution_type,
-      telephone: formData.telephone.trim() || null,
-      location: formData.location.trim() || null,
+      name: formData.name,
+      cnpj: formData.cnpj,
+      institution_type: formData.institution_type, // "Publica" ou "Privada"
+      telephone: formData.telephone.trim() ? formData.telephone : null,
+      location: formData.location.trim() ? formData.location : null,
     };
 
     try {
-      const institution = await invoke("create_institution", { institution: payload });
-      onInstituicaoCadastrada?.(institution);
-    } catch (error) {
-      console.error("Erro ao cadastrar instituição:", error);
-      setErro(typeof error === "string" ? error : error?.message || String(error));
+      const novaInstituicao = await invoke("create_institution", {
+        institution: payload,
+      });
+
+      setSucesso(`Instituição "${novaInstituicao.name}" cadastrada com sucesso!`);
+      
+      // Reseta o formulário
+      setFormData({
+        name: "",
+        cnpj: "",
+        institution_type: "Publica",
+        telephone: "",
+        location: "",
+      });
+
+      // Se houver callback para atualizar listas pai (ex: na tela de Contratos)
+      if (onInstituicaoCadastrada) {
+        onInstituicaoCadastrada(novaInstituicao);
+      }
+    } catch (err) {
+      console.error("Erro ao cadastrar instituição:", err);
+      // Exibe mensagens retornadas pelo service.rs (ex: "CNPJ inválido", "CNPJ já cadastrado")
+      setErro(err.toString());
     } finally {
       setLoading(false);
     }
   };
 
-  return <>
-    <div className="modal-header">
-      <div><h2>Cadastrar nova instituição</h2><p>Preencha os dados para adicioná-la ao contrato.</p></div>
-      <button type="button" className="modal-close" onClick={onCancel} aria-label="Voltar à seleção de instituições">✕</button>
+  return (
+    <div className="dashboard-container">
+      <SidebarNavigation onNavigate={onNavigate} activeScreen="instituicoes" />
+
+      <div className="main-wrapper">
+        <main className="dashboard-content">
+          <header className="dashboard-header institutions-header">
+            <div>
+              <h1>Instituições</h1>
+              <p>Cadastre instituições para vincular aos contratos.</p>
+            </div>
+            <UserProfileButton onClick={() => onNavigate?.("perfil")} />
+          </header>
+
+          <section style={{ maxWidth: "700px", padding: "24px", background: "#fff", borderRadius: "12px" }}>
+            <h2>Cadastrar Nova Instituição</h2>
+
+            {erro && (
+              <div role="alert" style={{ color: "red", padding: "8px", marginBottom: "10px", border: "1px solid red" }}>
+                {erro}
+              </div>
+            )}
+
+            {sucesso && (
+              <div role="status" style={{ color: "green", padding: "8px", marginBottom: "10px", border: "1px solid green" }}>
+                {sucesso}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit}>
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", marginBottom: "4px" }}>Nome da Instituição *</label>
+                <input type="text" name="name" value={formData.name} onChange={handleChange} required style={{ width: "100%", padding: "8px" }} />
+              </div>
+
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", marginBottom: "4px" }}>CNPJ *</label>
+                <input type="text" name="cnpj" placeholder="11.222.333/0001-81" value={formData.cnpj} onChange={handleChange} maxLength={18} autoCapitalize="characters" required style={{ width: "100%", padding: "8px" }} />
+              </div>
+
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", marginBottom: "4px" }}>Tipo *</label>
+                <select name="institution_type" value={formData.institution_type} onChange={handleChange} style={{ width: "100%", padding: "8px" }}>
+                  <option value="Publica">Pública</option>
+                  <option value="Privada">Privada</option>
+                </select>
+              </div>
+
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", marginBottom: "4px" }}>Telefone</label>
+                <input type="tel" name="telephone" placeholder="(49) 99999-9999" value={formData.telephone} onChange={handleChange} maxLength={15} style={{ width: "100%", padding: "8px" }} />
+              </div>
+
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", marginBottom: "4px" }}>Endereço / Localização</label>
+                <input type="text" name="location" value={formData.location} onChange={handleChange} style={{ width: "100%", padding: "8px" }} />
+              </div>
+
+              <button type="submit" disabled={loading} style={{ width: "100%", padding: "10px", cursor: loading ? "not-allowed" : "pointer" }}>
+                {loading ? "Salvando..." : "Salvar Instituição"}
+              </button>
+            </form>
+          </section>
+        </main>
+      </div>
     </div>
-    <form onSubmit={handleSubmit}>
-      <div className="modal-body contract-institution-form">
-        {erro && <div className="contract-institution-error" role="alert">{erro}</div>}
-        <div className="form-grid-2">
-          <div className="form-group full-width"><label htmlFor="institution-name">Nome da instituição *</label><input id="institution-name" type="text" name="name" value={formData.name} onChange={handleChange} maxLength={150} required autoFocus /></div>
-          <div className="form-group"><label htmlFor="institution-cnpj">CNPJ *</label><input id="institution-cnpj" type="text" name="cnpj" placeholder="11.222.333/0001-81" value={formData.cnpj} onChange={handleChange} required /></div>
-          <div className="form-group"><label htmlFor="institution-type">Tipo *</label><select id="institution-type" name="institution_type" value={formData.institution_type} onChange={handleChange} required><option value="Publica">Pública</option><option value="Privada">Privada</option></select></div>
-          <div className="form-group"><label htmlFor="institution-phone">Telefone</label><input id="institution-phone" type="tel" name="telephone" value={formData.telephone} onChange={handleChange} /></div>
-          <div className="form-group"><label htmlFor="institution-location">Endereço / Localização</label><input id="institution-location" type="text" name="location" value={formData.location} onChange={handleChange} maxLength={200} /></div>
-        </div>
-      </div>
-      <div className="modal-footer">
-        <button type="button" className="btn-cancel" onClick={onCancel} disabled={loading}>Voltar</button>
-        <button type="submit" className="btn-save-contract" disabled={loading}>{loading ? "Salvando..." : "Salvar e selecionar"}</button>
-      </div>
-    </form>
-  </>;
+  );
 }

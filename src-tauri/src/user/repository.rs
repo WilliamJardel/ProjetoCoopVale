@@ -31,6 +31,14 @@ pub fn find_by_id(conn: &Connection, id: i32) -> Result<Option<User>> {
     }
 }
 
+pub fn update_name(conn: &Connection, id: i32, name: &str) -> Result<usize> {
+    conn.execute("UPDATE user SET name = ?1 WHERE id = ?2", (name, id))
+}
+
+pub fn update_password(conn: &Connection, id: i32, password_hash: &str) -> Result<usize> {
+    conn.execute("UPDATE user SET password = ?1 WHERE id = ?2", (password_hash, id))
+}
+
 pub fn find_all(conn: &Connection) -> Result<Vec<User>> {
     let mut stmt = conn.prepare(
         "SELECT id, name, email, password, created_at FROM user ORDER BY id",
