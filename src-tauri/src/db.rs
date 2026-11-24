@@ -149,7 +149,7 @@ fn create_tables(conn: &Connection) -> Result<()> {
             data_entrega           TEXT NOT NULL,
             observacao             TEXT NOT NULL DEFAULT '',
             status                 TEXT NOT NULL DEFAULT 'Entregue'
-                       CHECK (status IN ('Pendente', 'Entregue'))
+                                   CHECK (status IN ('Pendente', 'Entregue'))
         )",
         [],
     )?;
@@ -171,6 +171,22 @@ fn create_tables(conn: &Connection) -> Result<()> {
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_entrega_por_item ON entrega(item_contrato_id)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS delivery_proof (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            delivery_id INTEGER NOT NULL
+                        REFERENCES entrega(id) ON DELETE CASCADE,
+            file_name   TEXT NOT NULL CHECK (length(trim(file_name)) > 0),
+            mime_type   TEXT,
+            content     BLOB NOT NULL CHECK (length(content) > 0),
+            created_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_delivery_proof_delivery ON delivery_proof(delivery_id)",
         [],
     )?;
     conn.execute(
@@ -244,6 +260,32 @@ mod tests {
             )
             .unwrap();
         assert_eq!(migrated_item, (1, None));
+    }
+
+    #[test]
+    fn adds_delivery_status_to_existing_deliveries() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch(
+            "CREATE TABLE entrega (
+                 id INTEGER PRIMARY KEY,
+                 item_contrato_id INTEGER NOT NULL,
+                 quantidade_solicitada INTEGER NOT NULL,
+                 quantidade_entregue INTEGER NOT NULL,
+                 data_entrega TEXT NOT NULL,
+                 observacao TEXT NOT NULL DEFAULT ''
+             );
+             INSERT INTO entrega VALUES (1, 1, 2, 2, '2026-03-10', '');",
+        )
+        .unwrap();
+
+        init(&conn).unwrap();
+
+        let status: String = conn
+            .query_row("SELECT status FROM entrega WHERE id = 1", [], |row| {
+                row.get(0)
+            })
+            .unwrap();
+        assert_eq!(status, "Entregue");
     }
 
     #[test]
