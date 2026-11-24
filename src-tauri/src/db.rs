@@ -168,6 +168,7 @@ fn create_tables(conn: &Connection) -> Result<()> {
             [],
         )?;
     }
+
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_entrega_por_item ON entrega(item_contrato_id)",
         [],

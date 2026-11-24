@@ -118,6 +118,11 @@
   font: inherit;
 }
 
+.finance-form input[inputmode="decimal"] {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .finance-note-field {
   grid-column: span 2;
 }

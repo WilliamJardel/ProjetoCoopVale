@@ -7,8 +7,9 @@ mod institution;
 mod contract;
 mod contractItem;
 mod delivery;
-mod Product;
+mod product;
 mod payment;
+mod dashboard;
 
 use auth::commands as auth_commands;
 use auth::rate_limit::LoginAttempts;
@@ -51,8 +52,6 @@ fn main() {
             institution::commands::list_institutions,
             contract::commands::create_contract,
             contract::commands::update_contract,
-            contract::commands::delete_contract,
-            contract::commands::get_contract,
             contract::commands::list_contracts,
             contract::commands::list_contracts_by_institution,
             Product::commands::create_product,
@@ -83,7 +82,13 @@ fn main() {
             payment::commands::list_payments,
             payment::commands::list_payments_by_contract,
             payment::commands::get_contract_balance,
+            product::commands::create_product,
+            product::commands::update_product,
+            product::commands::deactivate_product,
+            product::commands::get_product,
+            product::commands::list_products,
+            dashboard::commands::get_dashboard_summary,
         ])
         .run(tauri::generate_context!())
-        .expect("erro ao rodar a aplicação Tauri");
+        .expect("error while running tauri application");
 }
