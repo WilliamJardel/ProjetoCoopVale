@@ -1,7 +1,16 @@
 import React, { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import {
+  formatCnpjInput,
+  formatPhoneInput,
+} from "../utils/inputFormatters";
+import SidebarNavigation from "./SidebarNavigation";
+import UserProfileButton from "./UserProfileButton";
 
-export default function CadastrarInstituicao({ onInstituicaoCadastrada }) {
+export default function CadastrarInstituicao({
+  onInstituicaoCadastrada,
+  onNavigate,
+}) {
   const [formData, setFormData] = useState({
     name: "",
     cnpj: "",
@@ -16,7 +25,15 @@ export default function CadastrarInstituicao({ onInstituicaoCadastrada }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]:
+        name === "cnpj"
+          ? formatCnpjInput(value)
+          : name === "telephone"
+            ? formatPhoneInput(value)
+            : value,
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -65,90 +82,70 @@ export default function CadastrarInstituicao({ onInstituicaoCadastrada }) {
   };
 
   return (
-    <div style={{ maxWidth: "500px", margin: "0 auto", padding: "20px" }}>
-      <h2>Cadastrar Nova Instituição</h2>
+    <div className="dashboard-container">
+      <SidebarNavigation onNavigate={onNavigate} activeScreen="instituicoes" />
 
-      {erro && (
-        <div style={{ color: "red", padding: "8px", marginBottom: "10px", border: "1px solid red" }}>
-          {erro}
-        </div>
-      )}
+      <div className="main-wrapper">
+        <main className="dashboard-content">
+          <header className="dashboard-header institutions-header">
+            <div>
+              <h1>Instituições</h1>
+              <p>Cadastre instituições para vincular aos contratos.</p>
+            </div>
+            <UserProfileButton onClick={() => onNavigate?.("perfil")} />
+          </header>
 
-      {sucesso && (
-        <div style={{ color: "green", padding: "8px", marginBottom: "10px", border: "1px solid green" }}>
-          {sucesso}
-        </div>
-      )}
+          <section style={{ maxWidth: "700px", padding: "24px", background: "#fff", borderRadius: "12px" }}>
+            <h2>Cadastrar Nova Instituição</h2>
 
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "12px" }}>
-          <label style={{ display: "block", marginBottom: "4px" }}>Nome da Instituição *</label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            style={{ width: "100%", padding: "8px" }}
-          />
-        </div>
+            {erro && (
+              <div role="alert" style={{ color: "red", padding: "8px", marginBottom: "10px", border: "1px solid red" }}>
+                {erro}
+              </div>
+            )}
 
-        <div style={{ marginBottom: "12px" }}>
-          <label style={{ display: "block", marginBottom: "4px" }}>CNPJ *</label>
-          <input
-            type="text"
-            name="cnpj"
-            placeholder="11.222.333/0001-81"
-            value={formData.cnpj}
-            onChange={handleChange}
-            required
-            style={{ width: "100%", padding: "8px" }}
-          />
-        </div>
+            {sucesso && (
+              <div role="status" style={{ color: "green", padding: "8px", marginBottom: "10px", border: "1px solid green" }}>
+                {sucesso}
+              </div>
+            )}
 
-        <div style={{ marginBottom: "12px" }}>
-          <label style={{ display: "block", marginBottom: "4px" }}>Tipo *</label>
-          <select
-            name="institution_type"
-            value={formData.institution_type}
-            onChange={handleChange}
-            style={{ width: "100%", padding: "8px" }}
-          >
-            <option value="Publica">Pública</option>
-            <option value="Privada">Privada</option>
-          </select>
-        </div>
+            <form onSubmit={handleSubmit}>
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", marginBottom: "4px" }}>Nome da Instituição *</label>
+                <input type="text" name="name" value={formData.name} onChange={handleChange} required style={{ width: "100%", padding: "8px" }} />
+              </div>
 
-        <div style={{ marginBottom: "12px" }}>
-          <label style={{ display: "block", marginBottom: "4px" }}>Telefone</label>
-          <input
-            type="text"
-            name="telephone"
-            value={formData.telephone}
-            onChange={handleChange}
-            style={{ width: "100%", padding: "8px" }}
-          />
-        </div>
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", marginBottom: "4px" }}>CNPJ *</label>
+                <input type="text" name="cnpj" placeholder="11.222.333/0001-81" value={formData.cnpj} onChange={handleChange} maxLength={18} autoCapitalize="characters" required style={{ width: "100%", padding: "8px" }} />
+              </div>
 
-        <div style={{ marginBottom: "12px" }}>
-          <label style={{ display: "block", marginBottom: "4px" }}>Endereço / Localização</label>
-          <input
-            type="text"
-            name="location"
-            value={formData.location}
-            onChange={handleChange}
-            style={{ width: "100%", padding: "8px" }}
-          />
-        </div>
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", marginBottom: "4px" }}>Tipo *</label>
+                <select name="institution_type" value={formData.institution_type} onChange={handleChange} style={{ width: "100%", padding: "8px" }}>
+                  <option value="Publica">Pública</option>
+                  <option value="Privada">Privada</option>
+                </select>
+              </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{ width: "100%", padding: "10px", cursor: loading ? "not-allowed" : "pointer" }}
-        >
-          {loading ? "Salvando..." : "Salvar Instituição"}
-        </button>
-      </form>
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", marginBottom: "4px" }}>Telefone</label>
+                <input type="tel" name="telephone" placeholder="(49) 99999-9999" value={formData.telephone} onChange={handleChange} maxLength={15} style={{ width: "100%", padding: "8px" }} />
+              </div>
+
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", marginBottom: "4px" }}>Endereço / Localização</label>
+                <input type="text" name="location" value={formData.location} onChange={handleChange} style={{ width: "100%", padding: "8px" }} />
+              </div>
+
+              <button type="submit" disabled={loading} style={{ width: "100%", padding: "10px", cursor: loading ? "not-allowed" : "pointer" }}>
+                {loading ? "Salvando..." : "Salvar Instituição"}
+              </button>
+            </form>
+          </section>
+        </main>
+      </div>
     </div>
   );
 }

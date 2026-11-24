@@ -1,9 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { useAuth } from "../context/AuthContext";
-import iconCoopVale from "../public/img/iconCoopVale.png";
+import SidebarNavigation from "./SidebarNavigation";
+import UserProfileButton from "./UserProfileButton";
 import "../Styles/Dashboard.css";
 import "../Styles/Financeiro.css";
+import {
+  formatCurrencyInput,
+  parseCurrencyInput,
+} from "../utils/inputFormatters";
 
 const emptyForm = {
   contract_id: "",
@@ -25,7 +29,6 @@ const formatDate = (date) => {
 };
 
 function Financeiro({ onNavigate }) {
-  const { session } = useAuth();
   const [contracts, setContracts] = useState([]);
   const [payments, setPayments] = useState([]);
   const [selectedContractId, setSelectedContractId] = useState("");
@@ -110,7 +113,7 @@ function Financeiro({ onNavigate }) {
     setError("");
     setSuccess("");
 
-    const amount = Number(form.amount);
+    const amount = parseCurrencyInput(form.amount);
     if (!Number.isFinite(amount) || amount <= 0) {
       setError("Informe um valor de pagamento maior que zero.");
       return;
@@ -152,7 +155,7 @@ function Financeiro({ onNavigate }) {
     setEditingPaymentId(payment.id);
     setForm({
       contract_id: String(payment.contract_id),
-      amount: (payment.amount_cents / 100).toFixed(2),
+      amount: formatCurrencyInput(String(payment.amount_cents)),
       payment_date: payment.payment_date,
       note: payment.note,
     });
@@ -175,23 +178,7 @@ function Financeiro({ onNavigate }) {
 
   return (
     <div className="dashboard-container">
-      <aside className="sidebar">
-        <div className="sidebar-brand">
-          <img src={iconCoopVale} alt="CoopVale Logo" className="sidebar-logo" />
-          <span className="sidebar-subbrand">ValeGestão</span>
-        </div>
-        <nav className="sidebar-nav">
-          <button type="button" className="nav-item" onClick={() => onNavigate("dashboard")}>
-            <span className="nav-icon">🏠</span><span>Início</span>
-          </button>
-          <button type="button" className="nav-item" onClick={() => onNavigate("contratos")}>
-            <span className="nav-icon">📑</span><span>Contratos / Chamadas</span>
-          </button>
-          <button type="button" className="nav-item active" onClick={() => onNavigate("financeiro")}>
-            <span className="nav-icon">💲</span><span>Financeiro</span>
-          </button>
-        </nav>
-      </aside>
+      <SidebarNavigation onNavigate={onNavigate} activeScreen="financeiro" />
 
       <div className="main-wrapper">
         <main className="finance-content">
@@ -200,7 +187,7 @@ function Financeiro({ onNavigate }) {
               <h1>Financeiro</h1>
               <p>Pagamentos recebidos e saldos dos contratos</p>
             </div>
-            <span className="finance-user">{session?.name || "CoopVale"}</span>
+            <UserProfileButton onClick={() => onNavigate?.("perfil")} />
           </header>
 
           {error && <div className="finance-message error" role="alert">{error}</div>}
@@ -247,12 +234,14 @@ function Financeiro({ onNavigate }) {
               <label>
                 Valor (R$)
                 <input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
                   required
                   value={form.amount}
-                  onChange={(event) => setForm((current) => ({ ...current, amount: event.target.value }))}
+                  onChange={(event) => setForm((current) => ({
+                    ...current,
+                    amount: formatCurrencyInput(event.target.value),
+                  }))}
                   placeholder="0,00"
                 />
               </label>

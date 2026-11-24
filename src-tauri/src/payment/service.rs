@@ -1,5 +1,6 @@
 use crate::contract::repository as contract_repository;
 use crate::db::error_message;
+use crate::invoice::repository as invoice_repository;
 use crate::payment::model::{ContractBalance, Payment, PaymentData};
 use crate::payment::repository;
 use rusqlite::Connection;
@@ -59,6 +60,8 @@ pub fn update(conn: &mut Connection, id: i32, data: PaymentData) -> Result<Payme
         if affected == 0 {
             return Err("Pagamento não encontrado".to_string());
         }
+        // O valor do pagamento mudou: a conferência da nota fiscal (RF06) precisa ser refeita.
+        invoice_repository::refresh_status(&tx, id).map_err(error_message)?;
         repository::find_by_id(&tx, id)
             .map_err(error_message)?
             .ok_or_else(|| "Pagamento não encontrado após a atualização".to_string())
@@ -108,6 +111,8 @@ mod tests {
     use crate::db;
     use crate::institution::model::{Institution, InstitutionType};
     use crate::institution::service as institution_service;
+    use crate::invoice::model::{InvoiceData, InvoiceStatus};
+    use crate::invoice::service as invoice_service;
     use chrono::NaiveDate;
 
     fn date(y: i32, m: u32, d: u32) -> NaiveDate {
@@ -224,6 +229,28 @@ mod tests {
         update(&mut conn, p.id, payment_data(c, 1_000_00)).unwrap();
         assert_eq!(get_contract_balance(&conn, c).unwrap().remaining_cents, 0);
         assert!(update(&mut conn, p.id, payment_data(c, 1_000_01)).is_err());
+    }
+
+    #[test]
+    fn update_refreshes_invoice_status_when_amount_changes() {
+        let mut conn = setup_db();
+        let c = new_contract(&conn);
+        let p = create(&mut conn, payment_data(c, 500_00)).unwrap();
+        invoice_service::register(
+            &mut conn,
+            p.id,
+            InvoiceData {
+                number: "NF-10".into(),
+                amount_cents: 500_00,
+                issue_date: date(2026, 3, 9),
+            },
+        )
+        .unwrap();
+
+        update(&mut conn, p.id, payment_data(c, 600_00)).unwrap();
+
+        let inv = invoice_service::get_by_payment(&conn, p.id).unwrap().unwrap();
+        assert_eq!(inv.status, InvoiceStatus::Divergente);
     }
 
     #[test]

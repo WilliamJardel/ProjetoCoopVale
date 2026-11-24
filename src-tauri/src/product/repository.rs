@@ -1,4 +1,4 @@
-use crate::Product::model::{Product, ProductData, Status};
+use crate::product::model::{Product, ProductData, Status};
 use rusqlite::{params, Connection, OptionalExtension, Result};
 
 pub fn insert(conn: &Connection, data: &ProductData) -> Result<i32> {
