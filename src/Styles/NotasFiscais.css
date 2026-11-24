@@ -1,0 +1,151 @@
+
+.notas-content {
+  width: 100%;
+  min-width: 0;
+}
+
+.notas-input {
+  height: 46px;
+  min-width: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: white;
+  color: #374151;
+  font-size: 13px;
+  outline: none;
+}
+
+.notas-input:focus {
+  border-color: #588e38;
+}
+
+.notas-table {
+  width: 100%;
+  min-width: 950px;
+  border-collapse: collapse;
+}
+
+.notas-table tbody tr:hover {
+  background-color: #f8faf5;
+}
+
+/* Janela de cadastro de nota fiscal */
+
+.notas-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.notas-modal {
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 28px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+}
+
+.notas-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.notas-modal-header h2 {
+  margin: 0;
+  color: #2b3823;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.notas-modal-header button {
+  border: none;
+  background: transparent;
+  color: #777;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.notas-modal-description {
+  margin: 10px 0 24px;
+  color: #777;
+  font-size: 13px;
+}
+
+.notas-modal-fields {
+  display: grid;
+  gap: 16px;
+}
+
+.notas-modal-fields label {
+  display: block;
+  margin-bottom: 7px;
+  color: #34422e;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.notas-modal-fields input,
+.notas-modal-fields select {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  color: #374151;
+  font-size: 13px;
+}
+
+.notas-modal-fields input:focus,
+.notas-modal-fields select:focus {
+  border-color: #588e38;
+  outline: none;
+}
+
+.notas-modal-info {
+  margin: 18px 0;
+  color: #777;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.notas-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.notas-modal-actions button {
+  padding: 11px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.notas-cancelar {
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #555;
+}
+
+.notas-salvar {
+  border: none;
+  background: #588e38;
+  color: white;
+}
+
+.notas-salvar:hover {
+  background: #3a6322;
+}

@@ -197,6 +197,18 @@ function Financeiro({ onNavigate }) {
           <button type="button" className="nav-item" onClick={() => onNavigate("instituicoes")}>
             <span className="nav-icon">🏢</span><span>Instituições</span>
           </button>
+          <button type="button" className="nav-item" onClick={() => onNavigate("notas-fiscais")}>
+            <span className="nav-icon">🧾</span><span>Notas Fiscais</span>
+          </button>
+          <button type="button" className="nav-item" onClick={() => onNavigate("produtos")}>
+            <span className="nav-icon">📦</span><span>Produtos</span>
+          </button>
+          <button type="button" className="nav-item" onClick={() => onNavigate("entregas")}>
+            <span className="nav-icon">🚚</span><span>Entregas</span>
+          </button>
+          <button type="button" className="nav-item" onClick={() => onNavigate("relatorios")}>
+            <span className="nav-icon">📊</span><span>Relatórios</span>
+          </button>
         </nav>
       </aside>
 

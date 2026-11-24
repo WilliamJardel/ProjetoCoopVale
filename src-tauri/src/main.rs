@@ -10,6 +10,7 @@ mod delivery;
 mod product;
 mod payment;
 mod dashboard;
+mod invoice;
 
 use auth::commands as auth_commands;
 use auth::rate_limit::LoginAttempts;
@@ -88,6 +89,12 @@ fn main() {
             product::commands::get_product,
             product::commands::list_products,
             dashboard::commands::get_dashboard_summary,
+            invoice::commands::register_invoice,
+            invoice::commands::update_invoice,
+            invoice::commands::remove_invoice,
+            invoice::commands::get_invoice,
+            invoice::commands::list_invoices,
+            invoice::commands::list_invoices_by_contract,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
