@@ -138,6 +138,23 @@ fn create_tables(conn: &Connection) -> Result<()> {
         "CREATE INDEX IF NOT EXISTS idx_item_por_contrato ON item_contrato(contrato_id)",
         [],
     )?;
+    conn.execute_batch(
+        "CREATE TRIGGER IF NOT EXISTS prevent_product_deactivation_with_active_contract
+         BEFORE UPDATE OF status ON produto
+         FOR EACH ROW
+         WHEN OLD.status = 'Ativo'
+          AND NEW.status = 'Desativado'
+          AND EXISTS (
+              SELECT 1
+                FROM item_contrato ic
+                JOIN contrato c ON c.id = ic.contrato_id
+               WHERE ic.produto_id = OLD.id
+                 AND c.status != 'Concluido'
+          )
+         BEGIN
+             SELECT RAISE(ABORT, 'Produto associado a contrato ativo');
+         END;",
+    )?;
     conn.execute(
         "CREATE TABLE IF NOT EXISTS entrega (
             id                     INTEGER PRIMARY KEY AUTOINCREMENT,
