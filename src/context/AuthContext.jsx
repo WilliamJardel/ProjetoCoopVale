@@ -32,8 +32,12 @@ export const AuthProvider = ({ children }) => {
     setSession(null);
   };
 
+  const updateSession = (updatedSession) => {
+    setSession(updatedSession);
+  };
+
   return (
-    <AuthContext.Provider value={{ session, loading, login, logout }}>
+    <AuthContext.Provider value={{ session, loading, login, logout, updateSession }}>
       {children}
     </AuthContext.Provider>
   );

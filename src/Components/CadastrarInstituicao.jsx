@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { formatCnpjInput } from "../utils/inputFormatters";
+import {
+  formatCnpjInput,
+  formatPhoneInput,
+} from "../utils/inputFormatters";
+import SidebarNavigation from "./SidebarNavigation";
+import UserProfileButton from "./UserProfileButton";
 
 export default function CadastrarInstituicao({
   onInstituicaoCadastrada,
@@ -22,7 +27,12 @@ export default function CadastrarInstituicao({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "cnpj" ? formatCnpjInput(value) : value,
+      [name]:
+        name === "cnpj"
+          ? formatCnpjInput(value)
+          : name === "telephone"
+            ? formatPhoneInput(value)
+            : value,
     }));
   };
 
@@ -73,33 +83,16 @@ export default function CadastrarInstituicao({
 
   return (
     <div className="dashboard-container">
-      <aside className="sidebar">
-        <div className="sidebar-brand">
-          <span className="sidebar-subbrand">ValeGestão</span>
-        </div>
-        <nav className="sidebar-nav">
-          <button type="button" className="nav-item" onClick={() => onNavigate?.("dashboard")}>
-            <span className="nav-icon">🏠</span><span>Início</span>
-          </button>
-          <button type="button" className="nav-item" onClick={() => onNavigate?.("contratos")}>
-            <span className="nav-icon">📑</span><span>Contratos / Chamadas</span>
-          </button>
-          <button type="button" className="nav-item" onClick={() => onNavigate?.("financeiro")}>
-            <span className="nav-icon">💲</span><span>Financeiro</span>
-          </button>
-          <button type="button" className="nav-item active" onClick={() => onNavigate?.("instituicoes")}>
-            <span className="nav-icon">🏢</span><span>Instituições</span>
-          </button>
-        </nav>
-      </aside>
+      <SidebarNavigation onNavigate={onNavigate} activeScreen="instituicoes" />
 
       <div className="main-wrapper">
         <main className="dashboard-content">
-          <header className="dashboard-header">
+          <header className="dashboard-header institutions-header">
             <div>
               <h1>Instituições</h1>
               <p>Cadastre instituições para vincular aos contratos.</p>
             </div>
+            <UserProfileButton onClick={() => onNavigate?.("perfil")} />
           </header>
 
           <section style={{ maxWidth: "700px", padding: "24px", background: "#fff", borderRadius: "12px" }}>
@@ -138,7 +131,7 @@ export default function CadastrarInstituicao({
 
               <div style={{ marginBottom: "12px" }}>
                 <label style={{ display: "block", marginBottom: "4px" }}>Telefone</label>
-                <input type="text" name="telephone" value={formData.telephone} onChange={handleChange} style={{ width: "100%", padding: "8px" }} />
+                <input type="tel" name="telephone" placeholder="(49) 99999-9999" value={formData.telephone} onChange={handleChange} maxLength={15} style={{ width: "100%", padding: "8px" }} />
               </div>
 
               <div style={{ marginBottom: "12px" }}>

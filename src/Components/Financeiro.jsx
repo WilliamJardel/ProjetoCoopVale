@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { useAuth } from "../context/AuthContext";
-import iconCoopVale from "../public/img/iconCoopVale.png";
+import SidebarNavigation from "./SidebarNavigation";
+import UserProfileButton from "./UserProfileButton";
 import "../Styles/Dashboard.css";
 import "../Styles/Financeiro.css";
 import {
@@ -29,7 +29,6 @@ const formatDate = (date) => {
 };
 
 function Financeiro({ onNavigate }) {
-  const { session } = useAuth();
   const [contracts, setContracts] = useState([]);
   const [payments, setPayments] = useState([]);
   const [selectedContractId, setSelectedContractId] = useState("");
@@ -179,26 +178,7 @@ function Financeiro({ onNavigate }) {
 
   return (
     <div className="dashboard-container">
-      <aside className="sidebar">
-        <div className="sidebar-brand">
-          <img src={iconCoopVale} alt="CoopVale Logo" className="sidebar-logo" />
-          <span className="sidebar-subbrand">ValeGestão</span>
-        </div>
-        <nav className="sidebar-nav">
-          <button type="button" className="nav-item" onClick={() => onNavigate("dashboard")}>
-            <span className="nav-icon">🏠</span><span>Início</span>
-          </button>
-          <button type="button" className="nav-item" onClick={() => onNavigate("contratos")}>
-            <span className="nav-icon">📑</span><span>Contratos / Chamadas</span>
-          </button>
-          <button type="button" className="nav-item active" onClick={() => onNavigate("financeiro")}>
-            <span className="nav-icon">💲</span><span>Financeiro</span>
-          </button>
-          <button type="button" className="nav-item" onClick={() => onNavigate("instituicoes")}>
-            <span className="nav-icon">🏢</span><span>Instituições</span>
-          </button>
-        </nav>
-      </aside>
+      <SidebarNavigation onNavigate={onNavigate} activeScreen="financeiro" />
 
       <div className="main-wrapper">
         <main className="finance-content">
@@ -207,7 +187,7 @@ function Financeiro({ onNavigate }) {
               <h1>Financeiro</h1>
               <p>Pagamentos recebidos e saldos dos contratos</p>
             </div>
-            <span className="finance-user">{session?.name || "CoopVale"}</span>
+            <UserProfileButton onClick={() => onNavigate?.("perfil")} />
           </header>
 
           {error && <div className="finance-message error" role="alert">{error}</div>}

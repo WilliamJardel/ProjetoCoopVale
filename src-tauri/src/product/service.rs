@@ -35,7 +35,7 @@ pub fn create(conn: &Connection, data: ProductData) -> Result<Product, String> {
 }
 
 pub fn update(conn: &Connection, id: i32, data: ProductData) -> Result<Product, String> {
-    let current = repository::find_by_id(conn, id)
+    repository::find_by_id(conn, id)
         .map_err(error_message)?
         .ok_or_else(|| "Produto não encontrado".to_string())?;
 
@@ -46,7 +46,9 @@ pub fn update(conn: &Connection, id: i32, data: ProductData) -> Result<Product, 
         return Err("Produto não encontrado".to_string());
     }
 
-    Ok(current)
+    repository::find_by_id(conn, id)
+        .map_err(error_message)?
+        .ok_or_else(|| "Produto não encontrado após a atualização".to_string())
 }
 
 pub fn deactivate(conn: &Connection, id: i32) -> Result<Product, String> {

@@ -124,6 +124,20 @@ body, html {
   font-size: 15px;
 }
 
+.dashboard-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.institutions-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
 /* Cards de Métricas */
 .metrics-grid {
   display: grid;

@@ -3,6 +3,13 @@
   width: 100%;
 }
 
+.relatorios-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
 .relatorios-table {
   width: 100%;
   border-collapse: collapse;

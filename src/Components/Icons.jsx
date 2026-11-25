@@ -8,6 +8,8 @@ import {
   Truck,
   Bell,
   Settings,
+  Building2,
+  UserRound,
   Plus,
   Pencil,
   Trash2,
@@ -29,9 +31,16 @@ export const menuIcons = {
   relatorios: ChartColumnIncreasing,
   produtos: Package,
   entregas: Truck,
+  instituicoes: Building2,
+  perfil: UserRound,
   avisos: Bell,
   configuracoes: Settings,
 };
+
+export function MenuIcon({ name }) {
+  const Icon = menuIcons[name];
+  return Icon ? <Icon size={19} strokeWidth={1.8} aria-hidden="true" /> : null;
+}
 
 export const actionIcons = {
   adicionar: Plus,

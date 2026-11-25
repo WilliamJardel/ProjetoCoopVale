@@ -1,11 +1,13 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import "../Styles/Contratos.css";
-import { useAuth } from "../context/AuthContext";
-import iconCoopVale from "../public/img/iconCoopVale.png";
+import SidebarNavigation from "./SidebarNavigation";
+import UserProfileButton from "./UserProfileButton";
 import {
   formatCurrencyInput,
   parseCurrencyInput,
+  formatIntegerInput,
+  parseIntegerInput,
 } from "../utils/inputFormatters";
 
 const emptyForm = {
@@ -29,14 +31,20 @@ const isNearExpiration = (contract) => {
 function Contratos({ onNavigate }) {
   const [institutions, setInstitutions] = useState([]);
 
-  const { session } = useAuth();
-
   // Estado para controlar a visualização: 'list' (Listagem) ou 'create' (Formulário)
   const [viewMode, setViewMode] = useState("list");
   const [editingContractId, setEditingContractId] = useState(null);
 
   // Estados da Listagem
   const [contracts, setContracts] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [contractItems, setContractItems] = useState([]);
+  const [originalContractItems, setOriginalContractItems] = useState([]);
+  const [itemForm, setItemForm] = useState({
+    product_id: "",
+    quantity: "",
+    unit_price: "",
+  });
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -47,17 +55,10 @@ function Contratos({ onNavigate }) {
   const [formData, setFormData] = useState(emptyForm);
 
   // Lista dinâmica de produtos dentro do formulário de cadastro
-  const [productsList, setProductsList] = useState([
-    { id: 1, name: "Polpa de Fruta", flavor: "Goiaba", quantity: 200, unit: "1kg" },
-    { id: 2, name: "Polpa de Fruta", flavor: "Goiaba", quantity: 200, unit: "1kg" },
-    { id: 3, name: "Polpa de Fruta", flavor: "Goiaba", quantity: 200, unit: "1kg" },
-    { id: 4, name: "Polpa de Fruta", flavor: "Goiaba", quantity: 200, unit: "1kg" },
-    { id: 5, name: "Polpa de Fruta", flavor: "Goiaba", quantity: 200, unit: "1kg" },
-  ]);
-
   useEffect(() => {
     fetchContracts();
     fetchInstitutions();
+    fetchProducts();
   }, []);
 
   const fetchContracts = async () => {
@@ -81,6 +82,16 @@ function Contratos({ onNavigate }) {
     }
   };
 
+  const fetchProducts = async () => {
+    try {
+      const data = await invoke("list_products");
+      setProducts(data || []);
+    } catch (err) {
+      console.error("Erro ao carregar produtos:", err);
+      alert("Não foi possível carregar o catálogo de produtos: " + err);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -90,18 +101,34 @@ function Contratos({ onNavigate }) {
   };
 
   const handleRemoveProduct = (id) => {
-    setProductsList((prev) => prev.filter((item) => item.id !== id));
+    const item = contractItems.find((entry) => entry.id === id);
+    if (item?.delivered_qtd > 0) {
+      alert("Este item já possui entregas e não pode ser removido.");
+      return;
+    }
+    setContractItems((previous) => previous.filter((entry) => entry.id !== id));
   };
 
   const handleAddProduct = () => {
-    const newProd = {
-      id: Date.now(),
-      name: "Polpa de Fruta",
-      flavor: "Goiaba",
-      quantity: 200,
-      unit: "1kg",
-    };
-    setProductsList((prev) => [...prev, newProd]);
+    const product = products.find((entry) => entry.id === Number(itemForm.product_id));
+    const quantity = parseIntegerInput(itemForm.quantity);
+    const unitPrice = parseCurrencyInput(itemForm.unit_price);
+    if (!product || !Number.isInteger(quantity) || quantity <= 0 ||
+        !Number.isFinite(unitPrice) || unitPrice <= 0) {
+      alert("Selecione um produto e informe quantidade e preço unitário válidos.");
+      return;
+    }
+    setContractItems((previous) => [
+      ...previous,
+      {
+        id: `new-${Date.now()}-${previous.length}`,
+        product,
+        item_qtd: quantity,
+        delivered_qtd: 0,
+        unit_price: Math.round(unitPrice * 100),
+      },
+    ]);
+    setItemForm({ product_id: "", quantity: "", unit_price: "" });
   };
 
   const handleSaveContract = async (e) => {
@@ -129,16 +156,45 @@ function Contratos({ onNavigate }) {
         end_date: formData.end_date,
       };
 
+      let savedContractId = editingContractId;
       if (editingContractId === null) {
-        await invoke("create_contract", { data: payload });
-        alert("Contrato cadastrado com sucesso!");
+        const savedContract = await invoke("create_contract", { data: payload });
+        savedContractId = savedContract.id;
       } else {
         await invoke("update_contract", { id: editingContractId, data: payload });
-        alert("Contrato atualizado com sucesso!");
       }
+
+      const currentItemIds = new Set(
+        contractItems
+          .filter((item) => Number.isInteger(item.id))
+          .map((item) => item.id),
+      );
+      for (const item of originalContractItems) {
+        if (!currentItemIds.has(item.id) && item.delivered_qtd === 0) {
+          await invoke("delete_contract_item", { id: item.id });
+        }
+      }
+      for (const item of contractItems) {
+        const itemData = {
+          contract_id: savedContractId,
+          product: item.product,
+          item_qtd: Number(item.item_qtd),
+          delivered_qtd: Number(item.delivered_qtd),
+          unit_price: Number(item.unit_price),
+        };
+        if (Number.isInteger(item.id)) {
+          await invoke("update_contract_item", { id: item.id, data: itemData });
+        } else {
+          await invoke("create_contract_item", { data: itemData });
+        }
+      }
+
       await fetchContracts();
+      alert(editingContractId === null ? "Contrato cadastrado com sucesso!" : "Contrato atualizado com sucesso!");
       setFormData(emptyForm);
       setEditingContractId(null);
+      setContractItems([]);
+      setOriginalContractItems([]);
       setViewMode("list");
     } catch (err) {
       console.error("Erro ao salvar contrato:", err);
@@ -149,12 +205,27 @@ function Contratos({ onNavigate }) {
   const handleCreateContract = () => {
     setFormData(emptyForm);
     setEditingContractId(null);
+    setContractItems([]);
+    setOriginalContractItems([]);
+    setItemForm({ product_id: "", quantity: "", unit_price: "" });
     setViewMode("create");
   };
 
-  const handleEditContract = (contract) => {
+  const handleEditContract = async (contract) => {
     if (contract.status === "Concluido") {
       alert("Contratos concluídos não podem ser editados.");
+      return;
+    }
+
+    try {
+      const items = await invoke("list_contract_items_by_contract", {
+        contractId: contract.id,
+      });
+      setContractItems(items);
+      setOriginalContractItems(items);
+    } catch (err) {
+      console.error("Erro ao carregar itens do contrato:", err);
+      alert("Não foi possível carregar os itens do contrato: " + err);
       return;
     }
 
@@ -167,6 +238,7 @@ function Contratos({ onNavigate }) {
       total_value: formatCurrencyInput(String(contract.total_value_cents)),
     });
     setEditingContractId(contract.id);
+    setItemForm({ product_id: "", quantity: "", unit_price: "" });
     setViewMode("create");
   };
 
@@ -228,6 +300,10 @@ function Contratos({ onNavigate }) {
     return [...years].sort((a, b) => a - b);
   }, [contracts]);
 
+  const activeContractsCount = contracts.filter((item) => item.status !== "Concluido").length;
+  const nearExpirationCount = contracts.filter(isNearExpiration).length;
+  const completedContractsCount = contracts.filter((item) => item.status === "Concluido").length;
+
   // Formatação para exibição no resumo à direita
   const formattedValue = () => {
     const val = parseCurrencyInput(formData.total_value);
@@ -268,76 +344,11 @@ function Contratos({ onNavigate }) {
 
   return (
     <div className="contracts-container">
-      {/* Sidebar Lateral (Permanecendo fixa para navegação) */}
-      <aside className="sidebar">
-        <div className="sidebar-brand">
-          <img
-            src={iconCoopVale}
-            alt="CoopVale Logo"
-            className="sidebar-logo"
-          />
-          <span className="sidebar-subbrand">ValeGestão</span>
-        </div>
-
-        <nav className="sidebar-nav">
-          <button
-            type="button"
-            className="nav-item"
-            onClick={() => onNavigate && onNavigate("dashboard")}
-          >
-            <span className="nav-icon">🏠</span>
-            <span>Início</span>
-          </button>
-          <button
-            type="button"
-            className="nav-item active"
-            onClick={() => setViewMode("list")}
-          >
-            <span className="nav-icon">📑</span>
-            <span>Contratos / Chamadas</span>
-          </button>
-          <button
-            type="button"
-            className="nav-item"
-            onClick={() => onNavigate && onNavigate("financeiro")}
-          >
-            <span className="nav-icon">💲</span>
-            <span>Financeiro</span>
-          </button>
-          <button
-            type="button"
-            className="nav-item"
-            onClick={() => onNavigate && onNavigate("instituicoes")}
-          >
-            <span className="nav-icon">🏢</span>
-            <span>Instituições</span>
-          </button>
-          <button type="button" className="nav-item">
-            <span className="nav-icon">🧾</span>
-            <span>Notas Fiscais</span>
-          </button>
-          <button type="button" className="nav-item">
-            <span className="nav-icon">📊</span>
-            <span>Relatórios</span>
-          </button>
-          <button type="button" className="nav-item">
-            <span className="nav-icon">📦</span>
-            <span>Produtos</span>
-          </button>
-          <button type="button" className="nav-item">
-            <span className="nav-icon">🚚</span>
-            <span>Entregas</span>
-          </button>
-          <button type="button" className="nav-item">
-            <span className="nav-icon">🔔</span>
-            <span>Avisos</span>
-          </button>
-          <button type="button" className="nav-item">
-            <span className="nav-icon">⚙️</span>
-            <span>Configurações</span>
-          </button>
-        </nav>
-      </aside>
+      <SidebarNavigation
+        onNavigate={onNavigate}
+        activeScreen="contratos"
+        activeAction={() => setViewMode("list")}
+      />
 
       {/* Conteúdo Principal Alternável */}
       <div className="main-wrapper">
@@ -351,22 +362,7 @@ function Contratos({ onNavigate }) {
               </div>
 
               <div className="header-actions">
-                <div className="notification-bell">
-                  <span className="bell-icon">🔔</span>
-                  <span className="notification-badge">2</span>
-                </div>
-                <div className="user-profile">
-                  <div className="avatar">
-                    {session?.name ? session.name.charAt(0).toUpperCase() : "U"}
-                  </div>
-                  <div className="user-info">
-                    <span className="user-name">
-                      {session?.name || "Deusivan Vieira"}
-                    </span>
-                    <span className="user-role">Administrador</span>
-                  </div>
-                  <span className="dropdown-arrow">▼</span>
-                </div>
+                <UserProfileButton onClick={() => onNavigate?.("perfil")} />
                 <button
                   type="button"
                   className="btn-add-contract"
@@ -381,7 +377,7 @@ function Contratos({ onNavigate }) {
               <div className="metric-card border-green">
                 <div className="metric-icon-box">📄</div>
                 <div className="metric-details">
-                  <span className="metric-number">{contracts.length || 8}</span>
+                  <span className="metric-number">{activeContractsCount}</span>
                   <span className="metric-label">Contratos ativos</span>
                 </div>
                 <span className="arrow-icon">➔</span>
@@ -390,8 +386,8 @@ function Contratos({ onNavigate }) {
               <div className="metric-card border-yellow">
                 <div className="metric-icon-box yellow">📅</div>
                 <div className="metric-details">
-                  <span className="metric-number">2</span>
-                  <span className="metric-label">Próximos do limite</span>
+                  <span className="metric-number">{nearExpirationCount}</span>
+                  <span className="metric-label">Próximos do vencimento</span>
                 </div>
                 <span className="arrow-icon">➔</span>
               </div>
@@ -399,8 +395,8 @@ function Contratos({ onNavigate }) {
               <div className="metric-card border-brown">
                 <div className="metric-icon-box brown">🕒</div>
                 <div className="metric-details">
-                  <span className="metric-number">1</span>
-                  <span className="metric-label">Encerrando em 30 dias</span>
+                  <span className="metric-number">{completedContractsCount}</span>
+                  <span className="metric-label">Concluídos</span>
                 </div>
                 <span className="arrow-icon">➔</span>
               </div>
@@ -409,7 +405,7 @@ function Contratos({ onNavigate }) {
                 <div className="metric-icon-box green-thick">📑</div>
                 <div className="metric-details">
                   <span className="metric-number">
-                    {contracts.length || 13}
+                    {contracts.length}
                   </span>
                   <span className="metric-label">Total de contratos</span>
                 </div>
@@ -586,20 +582,7 @@ function Contratos({ onNavigate }) {
                     <span className="bell-icon">🔔</span>
                     <span className="notification-badge">2</span>
                   </div>
-                  <div className="user-profile">
-                    <div className="avatar">
-                      {session?.name
-                        ? session.name.charAt(0).toUpperCase()
-                        : "U"}
-                    </div>
-                    <div className="user-info">
-                      <span className="user-name">
-                        {session?.name || "Deusivan Vieira"}
-                      </span>
-                      <span className="user-role">Administrador</span>
-                    </div>
-                    <span className="dropdown-arrow">▼</span>
-                  </div>
+                  <UserProfileButton onClick={() => onNavigate?.("perfil")} />
                 </div>
 
                 <div className="action-buttons-group">
@@ -708,17 +691,35 @@ function Contratos({ onNavigate }) {
                   </div>
                 </div>
 
-                {/* Tabela Interna de Produtos */}
+                {/* Itens vinculados ao contrato */}
                 <div className="contract-products-section">
                   <div className="products-section-header">
                     <h3>Produtos do contrato</h3>
-                    <button
-                      type="button"
-                      className="btn-add-product"
-                      onClick={handleAddProduct}
-                    >
-                      <span className="plus-icon">+</span> Adicionar produto
-                    </button>
+                  </div>
+
+                  <div className="form-grid-2">
+                    <div className="form-group">
+                      <label>Produto</label>
+                      <select value={itemForm.product_id} onChange={(event) => setItemForm((current) => ({ ...current, product_id: event.target.value }))}>
+                        <option value="">Selecione um produto</option>
+                        {products.filter((product) => product.status === "Ativo").map((product) => (
+                          <option key={product.id} value={product.id}>{product.name} ({product.measurement_unit})</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Quantidade</label>
+                      <input type="text" inputMode="numeric" value={itemForm.quantity} onChange={(event) => setItemForm((current) => ({ ...current, quantity: formatIntegerInput(event.target.value) }))} />
+                    </div>
+                    <div className="form-group">
+                      <label>Preço unitário (R$)</label>
+                      <input type="text" inputMode="decimal" placeholder="0,00" value={itemForm.unit_price} onChange={(event) => setItemForm((current) => ({ ...current, unit_price: formatCurrencyInput(event.target.value) }))} />
+                    </div>
+                    <div className="form-group">
+                      <button type="button" className="btn-add-product" onClick={handleAddProduct} disabled={!products.some((product) => product.status === "Ativo")}>
+                        <span className="plus-icon">+</span> Adicionar produto
+                      </button>
+                    </div>
                   </div>
 
                   <div className="table-wrapper">
@@ -726,24 +727,25 @@ function Contratos({ onNavigate }) {
                       <thead>
                         <tr>
                           <th>Produto</th>
-                          <th>Sabor</th>
                           <th>Quantidade</th>
                           <th>Unidade</th>
+                          <th>Preço unitário</th>
                           <th className="text-center">Ações</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {productsList.map((item) => (
+                        {contractItems.map((item) => (
                           <tr key={item.id}>
-                            <td>{item.name}</td>
-                            <td>{item.flavor}</td>
-                            <td>{item.quantity}</td>
-                            <td>{item.unit}</td>
+                            <td>{item.product.name}</td>
+                            <td>{Number(item.item_qtd).toLocaleString("pt-BR")}</td>
+                            <td>{item.product.measurement_unit}</td>
+                            <td>{formatCurrency(item.unit_price)}</td>
                             <td className="text-center">
                               <button
                                 type="button"
                                 className="btn-delete-row"
                                 onClick={() => handleRemoveProduct(item.id)}
+                                disabled={item.delivered_qtd > 0}
                                 title="Remover produto"
                               >
                                 🗑️
@@ -751,6 +753,9 @@ function Contratos({ onNavigate }) {
                             </td>
                           </tr>
                         ))}
+                        {contractItems.length === 0 && (
+                          <tr><td colSpan="5">Adicione ao menos um produto ao contrato.</td></tr>
+                        )}
                       </tbody>
                     </table>
                   </div>

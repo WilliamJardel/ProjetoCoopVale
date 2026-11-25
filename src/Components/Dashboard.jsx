@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import "../Styles/Dashboard.css";
 import { useAuth } from "../context/AuthContext";
-import iconCoopVale from "../public/img/iconCoopVale.png";
+import SidebarNavigation from "./SidebarNavigation";
+import UserProfileButton from "./UserProfileButton";
 
 function Dashboard({ onNavigate }) {
   const { session, logout } = useAuth();
@@ -33,78 +34,7 @@ function Dashboard({ onNavigate }) {
 
   return (
     <div className="dashboard-container">
-      {/* Sidebar Lateral */}
-      <aside className="sidebar">
-        <div className="sidebar-brand">
-          <img
-            src={iconCoopVale}
-            alt="CoopVale Logo"
-            className="sidebar-logo"
-          />
-          <span className="sidebar-subbrand">ValeGestão</span>
-        </div>
-
-        <nav className="sidebar-nav">
-          <button
-            type="button"
-            className="nav-item active"
-            onClick={() => onNavigate && onNavigate("dashboard")}
-          >
-            <span className="nav-icon">📄</span>
-            <span>Início</span>
-          </button>
-          <button
-            type="button"
-            className="nav-item"
-            onClick={() => onNavigate && onNavigate("contratos")}
-          >
-            <span className="nav-icon">📑</span>
-            <span>Contratos / Chamadas</span>
-          </button>
-          <button
-            type="button"
-            className="nav-item"
-            onClick={() => onNavigate && onNavigate("financeiro")}
-          >
-            <span className="nav-icon">💲</span>
-            <span>Financeiro</span>
-          </button>
-          <button
-            type="button"
-            className="nav-item"
-            onClick={() => onNavigate && onNavigate("instituicoes")}
-          >
-            <span className="nav-icon">🏢</span>
-            <span>Instituições</span>
-          </button>
-          <button type="button" className="nav-item">
-            <span className="nav-icon">🧾</span>
-            <span>Notas Fiscais</span>
-          </button>
-          <button type="button"
-          className="nav-item"
-          onClick={() => onNavigate?.("relatorios")}>
-            <span className="nav-icon">📊</span>
-            <span>Relatórios</span>
-          </button>
-          <button type="button" className="nav-item">
-            <span className="nav-icon">📦</span>
-            <span>Produtos</span>
-          </button>
-          <button type="button" className="nav-item">
-            <span className="nav-icon">🚚</span>
-            <span>Entregas</span>
-          </button>
-          <button type="button" className="nav-item">
-            <span className="nav-icon">🔔</span>
-            <span>Avisos</span>
-          </button>
-          <button type="button" className="nav-item">
-            <span className="nav-icon">⚙️</span>
-            <span>Configurações</span>
-          </button>
-        </nav>
-      </aside>
+      <SidebarNavigation onNavigate={onNavigate} activeScreen="dashboard" />
 
       {/* Conteúdo Principal */}
       <div className="main-wrapper">
@@ -124,22 +54,25 @@ function Dashboard({ onNavigate }) {
                 {session ? `• Bem-vindo, ${session.name}` : ""}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={logout}
-              style={{
-                backgroundColor: "#dc2626",
-                color: "#ffffff",
-                border: "none",
-                padding: "8px 16px",
-                borderRadius: "6px",
-                cursor: "pointer",
-                fontWeight: 600,
-                fontSize: "14px",
-              }}
-            >
-              Sair
-            </button>
+            <div className="dashboard-header-actions">
+              <button
+                type="button"
+                onClick={logout}
+                style={{
+                  backgroundColor: "#dc2626",
+                  color: "#ffffff",
+                  border: "none",
+                  padding: "8px 16px",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  fontSize: "14px",
+                }}
+              >
+                Sair
+              </button>
+              <UserProfileButton onClick={() => onNavigate?.("perfil")} />
+            </div>
           </header>
 
           {summaryError && (
