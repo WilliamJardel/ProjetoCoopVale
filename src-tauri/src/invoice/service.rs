@@ -319,7 +319,6 @@ mod tests {
             update(&mut conn, p2, nf("x", 300_00)).unwrap_err(),
             "Este pagamento ainda não possui nota fiscal registrada"
         );
-
         assert!(update(&mut conn, p1, nf("ab-1", 500_00)).unwrap().matches);
     }
 

@@ -23,7 +23,6 @@ import {
 
 import "../Styles/Dashboard.css";
 import "../Styles/NotasFiscais.css";
-
 function NotasFiscais({ onNavigate }) {
   const [busca, setBusca] = useState("");
   const [status, setStatus] = useState("");

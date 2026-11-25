@@ -101,7 +101,6 @@ function Entregas({ onNavigate }) {
     () => items.filter((item) => item.contract_id === Number(form.contract_id)),
     [items, form.contract_id],
   );
-
   const visibleDeliveries = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("pt-BR");
     return deliveries.filter((delivery) => {
