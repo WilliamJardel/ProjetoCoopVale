@@ -16,7 +16,6 @@ function MainContent() {
 
   const [currentScreen, setCurrentScreen] = useState("dashboard");
 
-  
   if (loading) {
     return (
       <div
@@ -35,12 +34,10 @@ function MainContent() {
     );
   }
 
-  
   if (!session) {
     return <Login />;
   }
 
-  
   switch (currentScreen) {
     case "contratos":
       return <Contratos onNavigate={setCurrentScreen} />;

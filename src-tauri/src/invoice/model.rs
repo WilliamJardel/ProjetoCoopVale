@@ -77,7 +77,6 @@ impl Invoice {
         })
     }
 
-   
     pub fn difference_cents(&self) -> Option<i64> {
         self.amount_cents.map(|a| a - self.payment_amount_cents)
     }

@@ -38,6 +38,21 @@ pub fn deactivate(conn: &Connection, id: i32) -> Result<usize> {
     )
 }
 
+pub fn has_active_contract(conn: &Connection, id: i32) -> Result<bool> {
+    conn.query_row(
+        "SELECT EXISTS (
+            SELECT 1
+              FROM item_contrato ic
+              JOIN contrato c ON c.id = ic.contrato_id
+             WHERE ic.produto_id = ?1
+               AND c.status != 'Concluido'
+        )",
+        [id],
+        |row| row.get::<_, i64>(0),
+    )
+    .map(|exists| exists != 0)
+}
+
 pub fn find_by_id(conn: &Connection, id: i32) -> Result<Option<Product>> {
     conn.query_row(
         &format!("SELECT {} FROM produto WHERE id = ?1", Product::COLUMNS),
