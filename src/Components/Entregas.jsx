@@ -17,6 +17,7 @@ const today = () => {
 };
 
 const emptyForm = () => ({
+  contract_id: "",
   contract_item_id: "",
   solicited_quantity: "",
   delivered_qtd: "",
@@ -91,6 +92,16 @@ function Entregas({ onNavigate }) {
     [deliveries, editingId, editableContracts, items],
   );
 
+  const selectedContractItems = useMemo(
+    () => availableItems.filter((item) => item.contract_id === Number(form.contract_id)),
+    [availableItems, form.contract_id],
+  );
+
+  const contractItemsForSelected = useMemo(
+    () => items.filter((item) => item.contract_id === Number(form.contract_id)),
+    [items, form.contract_id],
+  );
+
   const visibleDeliveries = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("pt-BR");
     return deliveries.filter((delivery) => {
@@ -118,6 +129,10 @@ function Entregas({ onNavigate }) {
     const solicited = parseIntegerInput(form.solicited_quantity);
     const delivered = parseIntegerInput(form.delivered_qtd);
     const item = items.find((entry) => entry.id === Number(form.contract_item_id));
+    if (item && item.contract_id !== Number(form.contract_id)) {
+      setError("Selecione um item pertencente ao contrato escolhido.");
+      return;
+    }
     const current = editingId === null ? null : deliveries.find((delivery) => delivery.id === editingId);
     const remaining = item
       ? item.item_qtd - item.delivered_qtd + (current?.contract_item.id === item.id ? current.delivered_qtd : 0)
@@ -162,6 +177,7 @@ function Entregas({ onNavigate }) {
     setSuccess("");
     setEditingId(delivery.id);
     setForm({
+      contract_id: String(delivery.contract_item.contract_id ?? delivery.contract.id),
       contract_item_id: String(delivery.contract_item.id),
       solicited_quantity: formatIntegerInput(delivery.solicited_quantity),
       delivered_qtd: formatIntegerInput(delivery.delivered_qtd),
@@ -207,15 +223,68 @@ function Entregas({ onNavigate }) {
             <h2 className="mb-4 text-lg font-semibold">{editingId === null ? "Cadastrar entrega" : "Editar entrega"}</h2>
             <form onSubmit={handleSubmit} className="grid grid-cols-1 items-end gap-3 md:grid-cols-2 xl:grid-cols-3">
               <label className="flex flex-col gap-1 text-sm font-medium xl:col-span-3">
+                Contrato
+                <select
+                  required
+                  value={form.contract_id}
+                  onChange={(event) => setForm((current) => ({
+                    ...current,
+                    contract_id: event.target.value,
+                    contract_item_id: "",
+                  }))}
+                  className="rounded-lg border border-gray-300 p-2.5 font-normal"
+                >
+                  <option value="">Selecione um contrato</option>
+                  {[...editableContracts.values()].map((contract) => {
+                    const institution = institutions.find((entry) => entry.id === contract.institution_id);
+                    return (
+                      <option key={contract.id} value={contract.id}>
+                        Contrato #{contract.id} — {institution?.name ?? "Instituição"}
+                      </option>
+                    );
+                  })}
+                </select>
+              </label>
+              {form.contract_id && (
+                <div className="xl:col-span-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                  <p className="mb-2 text-sm font-semibold">Itens solicitados pelo contrato</p>
+                  {selectedContractItems.length === 0 ? (
+                    <p className="text-sm text-gray-500">Todos os itens deste contrato já foram entregues.</p>
+                  ) : (
+                    <div className="grid gap-2 md:grid-cols-2">
+                      {contractItemsForSelected.map((item) => {
+                        const current = editingId !== null
+                          ? deliveries.find((delivery) => delivery.id === editingId)
+                          : null;
+                        const remaining = item.item_qtd - item.delivered_qtd
+                          + (current?.contract_item.id === item.id ? current.delivered_qtd : 0);
+                        return (
+                          <div key={item.id} className="rounded-md border border-gray-200 bg-white p-3 text-sm">
+                            <p className="font-medium">{item.product.name}</p>
+                            <p className="text-gray-600">
+                              Quantidade contratada: {formatQuantity(item.item_qtd)} {item.product.measurement_unit}
+                            </p>
+                            <p className="text-gray-600">
+                              Entregue: {formatQuantity(item.delivered_qtd)} {item.product.measurement_unit}
+                            </p>
+                            <p className="text-gray-600">
+                              Restante: {formatQuantity(remaining)} {item.product.measurement_unit}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+              <label className="flex flex-col gap-1 text-sm font-medium xl:col-span-3">
                 Item do contrato
-                <select required value={form.contract_item_id} onChange={(event) => setForm((current) => ({ ...current, contract_item_id: event.target.value }))} className="rounded-lg border border-gray-300 p-2.5 font-normal">
-                  <option value="">Selecione produto e contrato</option>
-                  {availableItems.map((item) => {
-                    const contract = contracts.find((entry) => entry.id === item.contract_id);
-                    const institution = institutions.find((entry) => entry.id === contract?.institution_id);
+                <select required disabled={!form.contract_id} value={form.contract_item_id} onChange={(event) => setForm((current) => ({ ...current, contract_item_id: event.target.value }))} className="rounded-lg border border-gray-300 p-2.5 font-normal disabled:bg-gray-100">
+                  <option value="">Selecione um item do contrato</option>
+                  {selectedContractItems.map((item) => {
                     const current = editingId === null ? null : deliveries.find((delivery) => delivery.id === editingId);
                     const remaining = item.item_qtd - item.delivered_qtd + (current?.contract_item.id === item.id ? current.delivered_qtd : 0);
-                    return <option key={item.id} value={item.id}>{item.product.name} — Contrato #{contract?.id} — {institution?.name ?? "Instituição"} — saldo {formatQuantity(remaining)} {item.product.measurement_unit}</option>;
+                    return <option key={item.id} value={item.id}>{item.product.name} — contratada {formatQuantity(item.item_qtd)} — entregue {formatQuantity(item.delivered_qtd)} — restante {formatQuantity(remaining)} {item.product.measurement_unit}</option>;
                   })}
                 </select>
               </label>
