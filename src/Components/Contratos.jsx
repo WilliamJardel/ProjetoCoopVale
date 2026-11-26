@@ -43,7 +43,6 @@ function Contratos({ onNavigate }) {
   const [itemForm, setItemForm] = useState({
     product_id: "",
     quantity: "",
-    unit_price: "",
   });
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -53,6 +52,7 @@ function Contratos({ onNavigate }) {
 
   // Estados do Formulário de Cadastro (conectados aos campos exigidos pelo backend)
   const [formData, setFormData] = useState(emptyForm);
+  const [contractSuccessOpen, setContractSuccessOpen] = useState(false);
 
   // Lista dinâmica de produtos dentro do formulário de cadastro
   useEffect(() => {
@@ -112,10 +112,8 @@ function Contratos({ onNavigate }) {
   const handleAddProduct = () => {
     const product = products.find((entry) => entry.id === Number(itemForm.product_id));
     const quantity = parseIntegerInput(itemForm.quantity);
-    const unitPrice = parseCurrencyInput(itemForm.unit_price);
-    if (!product || !Number.isInteger(quantity) || quantity <= 0 ||
-        !Number.isFinite(unitPrice) || unitPrice <= 0) {
-      alert("Selecione um produto e informe quantidade e preço unitário válidos.");
+    if (!product || product.status !== "Ativo" || !Number.isInteger(quantity) || quantity <= 0) {
+      alert("Selecione um produto ativo e informe uma quantidade válida.");
       return;
     }
     setContractItems((previous) => [
@@ -125,10 +123,10 @@ function Contratos({ onNavigate }) {
         product,
         item_qtd: quantity,
         delivered_qtd: 0,
-        unit_price: Math.round(unitPrice * 100),
+        unit_price: product.reference_price_cents,
       },
     ]);
-    setItemForm({ product_id: "", quantity: "", unit_price: "" });
+    setItemForm({ product_id: "", quantity: "" });
   };
 
   const handleSaveContract = async (e) => {
@@ -150,6 +148,7 @@ function Contratos({ onNavigate }) {
       }
 
       const payload = {
+        contract_number: formData.contractNumber,
         institution_id: institutionId,
         total_value_cents: Math.round(totalValue * 100),
         start_date: formData.start_date,
@@ -190,7 +189,11 @@ function Contratos({ onNavigate }) {
       }
 
       await fetchContracts();
-      alert(editingContractId === null ? "Contrato cadastrado com sucesso!" : "Contrato atualizado com sucesso!");
+      if (editingContractId === null) {
+        setContractSuccessOpen(true);
+      } else {
+        alert("Contrato atualizado com sucesso!");
+      }
       setFormData(emptyForm);
       setEditingContractId(null);
       setContractItems([]);
@@ -202,12 +205,21 @@ function Contratos({ onNavigate }) {
     }
   };
 
+  useEffect(() => {
+    if (!contractSuccessOpen) return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setContractSuccessOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [contractSuccessOpen]);
+
   const handleCreateContract = () => {
     setFormData(emptyForm);
     setEditingContractId(null);
     setContractItems([]);
     setOriginalContractItems([]);
-    setItemForm({ product_id: "", quantity: "", unit_price: "" });
+    setItemForm({ product_id: "", quantity: "" });
     setViewMode("create");
   };
 
@@ -231,14 +243,14 @@ function Contratos({ onNavigate }) {
 
     setFormData({
       ...emptyForm,
-      contractNumber: `CP ${String(contract.id).padStart(2, "0")}/2026`,
+      contractNumber: contract.contract_number || "",
       institution_id: String(contract.institution_id),
       start_date: contract.start_date,
       end_date: contract.end_date,
       total_value: formatCurrencyInput(String(contract.total_value_cents)),
     });
     setEditingContractId(contract.id);
-    setItemForm({ product_id: "", quantity: "", unit_price: "" });
+    setItemForm({ product_id: "", quantity: "" });
     setViewMode("create");
   };
 
@@ -251,7 +263,7 @@ function Contratos({ onNavigate }) {
         (item) => item.id === contract.institution_id,
       );
       const searchableText = [
-        `CP ${String(contract.id).padStart(2, "0")}/2026`,
+        contract.contract_number,
         String(contract.id),
         institution?.name || `Instituição #${contract.institution_id}`,
       ]
@@ -335,6 +347,10 @@ function Contratos({ onNavigate }) {
       currency: "BRL",
     });
   };
+
+  const selectedProduct = products.find(
+    (product) => product.id === Number(itemForm.product_id),
+  );
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "";
@@ -491,9 +507,7 @@ function Contratos({ onNavigate }) {
                     ) : filteredContracts.length > 0 ? (
                       filteredContracts.map((item) => (
                         <tr key={item.id}>
-                          <td className="font-bold">{`CP ${String(
-                            item.id
-                          ).padStart(2, "0")}/2026`}</td>
+                          <td className="font-bold">{item.contract_number || "—"}</td>
                           <td>
                             {institutions.find(
                               (institution) => institution.id === item.institution_id,
@@ -712,8 +726,14 @@ function Contratos({ onNavigate }) {
                       <input type="text" inputMode="numeric" value={itemForm.quantity} onChange={(event) => setItemForm((current) => ({ ...current, quantity: formatIntegerInput(event.target.value) }))} />
                     </div>
                     <div className="form-group">
-                      <label>Preço unitário (R$)</label>
-                      <input type="text" inputMode="decimal" placeholder="0,00" value={itemForm.unit_price} onChange={(event) => setItemForm((current) => ({ ...current, unit_price: formatCurrencyInput(event.target.value) }))} />
+                      <label>Preço de referência (R$)</label>
+                      <input
+                        type="text"
+                        value={selectedProduct ? formatCurrency(selectedProduct.reference_price_cents) : ""}
+                        placeholder="Selecione um produto"
+                        readOnly
+                        aria-readonly="true"
+                      />
                     </div>
                     <div className="form-group">
                       <button type="button" className="btn-add-product" onClick={handleAddProduct} disabled={!products.some((product) => product.status === "Ativo")}>
@@ -817,6 +837,44 @@ function Contratos({ onNavigate }) {
           <div>Versão 1.0.0</div>
         </footer>
       </div>
+      {contractSuccessOpen && (
+        <div
+          className="contract-success-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setContractSuccessOpen(false);
+          }}
+        >
+          <section
+            className="contract-success-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="contract-success-title"
+          >
+            <button
+              type="button"
+              className="contract-success-close"
+              aria-label="Fechar confirmação"
+              onClick={() => setContractSuccessOpen(false)}
+            >
+              ×
+            </button>
+            <div className="contract-success-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="m5 12.5 4.5 4.5L19 7.5" />
+              </svg>
+            </div>
+            <h2 id="contract-success-title">contrato salvo com sucesso</h2>
+            <button
+              type="button"
+              className="contract-success-button"
+              onClick={() => setContractSuccessOpen(false)}
+              autoFocus
+            >
+              Fechar
+            </button>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

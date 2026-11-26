@@ -243,6 +243,7 @@ mod tests {
         contract_service::create(
             conn,
             ContractData {
+                contract_number: "CP 01/2026".into(),
                 institution_id,
                 total_value_cents: total_cents,
                 start_date: date(2026, 1, 1),

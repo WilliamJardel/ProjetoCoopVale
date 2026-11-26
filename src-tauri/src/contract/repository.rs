@@ -3,9 +3,10 @@ use rusqlite::{params, Connection, OptionalExtension, Result};
 
 pub fn insert(conn: &Connection, d: &ContractData) -> Result<i32> {
     conn.execute(
-        "INSERT INTO contrato (instituicao_id, valor_total_centavos, data_inicio, data_termino, status)
-         VALUES (?1, ?2, ?3, ?4, ?5)",
+        "INSERT INTO contrato (numero_contrato, instituicao_id, valor_total_centavos, data_inicio, data_termino, status)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
         params![
+            d.contract_number,
             d.institution_id,
             d.total_value_cents,
             d.start_date,
@@ -19,9 +20,11 @@ pub fn insert(conn: &Connection, d: &ContractData) -> Result<i32> {
 pub fn update(conn: &Connection, id: i32, d: &ContractData) -> Result<usize> {
     conn.execute(
         "UPDATE contrato
-            SET instituicao_id = ?1, valor_total_centavos = ?2, data_inicio = ?3, data_termino = ?4
-          WHERE id = ?5",
+            SET numero_contrato = ?1, instituicao_id = ?2, valor_total_centavos = ?3,
+                data_inicio = ?4, data_termino = ?5
+          WHERE id = ?6",
         params![
+            d.contract_number,
             d.institution_id,
             d.total_value_cents,
             d.start_date,

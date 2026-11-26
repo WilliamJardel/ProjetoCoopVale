@@ -55,7 +55,7 @@ pub struct Delivery {
 }
 
 impl Delivery {
-    pub const COLUMNS: &'static str = "produto.id, produto.nome, produto.unidade_de_medida, produto.categoria, produto.preco_de_referencia_centavos, produto.status, item_contrato.id, item_contrato.contrato_id, item_contrato.quantidade, item_contrato.quantidade_entregue, item_contrato.preco_unitario_centavos, entrega.id, entrega.quantidade_solicitada, entrega.quantidade_entregue, entrega.data_entrega, entrega.observacao, entrega.status, contrato.id, contrato.instituicao_id, contrato.valor_total_centavos, contrato.data_inicio, contrato.data_termino, contrato.status";
+    pub const COLUMNS: &'static str = "produto.id, produto.nome, produto.unidade_de_medida, produto.categoria, produto.preco_de_referencia_centavos, produto.status, item_contrato.id, item_contrato.contrato_id, item_contrato.quantidade, item_contrato.quantidade_entregue, item_contrato.preco_unitario_centavos, entrega.id, entrega.quantidade_solicitada, entrega.quantidade_entregue, entrega.data_entrega, entrega.observacao, entrega.status, contrato.id, contrato.instituicao_id, contrato.valor_total_centavos, contrato.data_inicio, contrato.data_termino, contrato.status, contrato.numero_contrato";
 
     pub fn from_row(row: &Row) -> Result<Self> {
         let delivery_status_text: String = row.get(16)?;
@@ -78,6 +78,7 @@ impl Delivery {
             status: delivery_status,
             contract: Contract {
                 id: row.get(17)?,
+                contract_number: row.get(23)?,
                 institution_id: row.get(18)?,
                 total_value_cents: row.get(19)?,
                 start_date: row.get(20)?,

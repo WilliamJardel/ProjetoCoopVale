@@ -38,6 +38,7 @@ function Financeiro({ onNavigate }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [paymentSuccessOpen, setPaymentSuccessOpen] = useState(false);
 
   const loadFinancialData = useCallback(async () => {
     setLoading(true);
@@ -134,7 +135,7 @@ function Financeiro({ onNavigate }) {
     try {
       if (editingPaymentId === null) {
         await invoke("create_payment", { data });
-        setSuccess("Pagamento registrado com sucesso.");
+        setPaymentSuccessOpen(true);
       } else {
         await invoke("update_payment", { id: editingPaymentId, data });
         setSuccess("Pagamento atualizado com sucesso.");
@@ -175,6 +176,15 @@ function Financeiro({ onNavigate }) {
       setError(String(err));
     }
   };
+
+  useEffect(() => {
+    if (!paymentSuccessOpen) return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setPaymentSuccessOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [paymentSuccessOpen]);
 
   return (
     <div className="dashboard-container">
@@ -326,6 +336,44 @@ function Financeiro({ onNavigate }) {
           </section>
         </main>
       </div>
+      {paymentSuccessOpen && (
+        <div
+          className="finance-success-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setPaymentSuccessOpen(false);
+          }}
+        >
+          <section
+            className="finance-success-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="finance-success-title"
+          >
+            <button
+              type="button"
+              className="finance-success-close"
+              aria-label="Fechar confirmação"
+              onClick={() => setPaymentSuccessOpen(false)}
+            >
+              ×
+            </button>
+            <div className="finance-success-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="m5 12.5 4.5 4.5L19 7.5" />
+              </svg>
+            </div>
+            <h2 id="finance-success-title">Pagamento realizado com sucesso</h2>
+            <button
+              type="button"
+              className="finance-success-button"
+              onClick={() => setPaymentSuccessOpen(false)}
+              autoFocus
+            >
+              Fechar
+            </button>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

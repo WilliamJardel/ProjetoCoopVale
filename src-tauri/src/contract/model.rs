@@ -37,6 +37,7 @@ impl FromStr for ContractStatus {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ContractData {
+    pub contract_number: String,
     pub institution_id: i32,
     pub total_value_cents: i64,
     pub start_date: NaiveDate,
@@ -46,6 +47,7 @@ pub struct ContractData {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Contract {
     pub id: i32,
+    pub contract_number: String,
     pub institution_id: i32,
     pub total_value_cents: i64,
     pub start_date: NaiveDate,
@@ -55,7 +57,7 @@ pub struct Contract {
 
 impl Contract {
     pub const COLUMNS: &'static str =
-        "id, instituicao_id, valor_total_centavos, data_inicio, data_termino, status";
+        "id, instituicao_id, valor_total_centavos, data_inicio, data_termino, status, numero_contrato";
 
     pub fn from_row(row: &Row) -> Result<Self> {
         let status_str: String = row.get(5)?;
@@ -65,6 +67,7 @@ impl Contract {
 
         Ok(Contract {
             id: row.get(0)?,
+            contract_number: row.get(6)?,
             institution_id: row.get(1)?,
             total_value_cents: row.get(2)?,
             start_date: row.get(3)?,
@@ -86,6 +89,7 @@ mod tests {
     fn contract(end: (i32, u32, u32), status: ContractStatus) -> Contract {
         Contract {
             id: 1,
+            contract_number: "CP 01/2026".into(),
             institution_id: 1,
             total_value_cents: 100_00,
             start_date: NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
