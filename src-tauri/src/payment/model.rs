@@ -63,6 +63,7 @@ mod tests {
     fn calculates_remaining_balance() {
         let contract = Contract {
             id: 7,
+            contract_number: "CP 07/2026".into(),
             institution_id: 1,
             total_value_cents: 1_000_00,
             start_date: NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),

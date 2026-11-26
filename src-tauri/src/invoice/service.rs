@@ -160,6 +160,7 @@ mod tests {
         contract_service::create(
             conn,
             ContractData {
+                contract_number: "CP 01/2026".into(),
                 institution_id: inst,
                 total_value_cents: 10_000_00,
                 start_date: date(2026, 1, 1),
@@ -319,7 +320,6 @@ mod tests {
             update(&mut conn, p2, nf("x", 300_00)).unwrap_err(),
             "Este pagamento ainda não possui nota fiscal registrada"
         );
-        
         assert!(update(&mut conn, p1, nf("ab-1", 500_00)).unwrap().matches);
     }
 
